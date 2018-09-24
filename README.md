@@ -304,7 +304,7 @@ make test_contracts tgt=agreements,bpm-runtime
 To run the test step for all the bundles of contracts run the following:
 
 ```bash
-make test_all_contracts
+make test_contracts
 ```
 
 ### Work with the API
@@ -319,12 +319,6 @@ To run the API test suite (without installing NPM or the bundles) run the follow
 
 ```bash
 make test_api
-```
-
-To run the full API test suite (including running NPM install and installing the bundles) run the following:
-
-```bash
-make test_all_api
 ```
 
 To restart the API but leave the chain running follow this sequence:
