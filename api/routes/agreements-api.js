@@ -199,7 +199,7 @@ module.exports = (app) => {
  * @apiBodyParameterExample {json} Success Object
 {
   "name": "Archetype 2",
-    "description": "Test Archetype"
+    "description": "Test Archetype",
     "price": "19.55",
     "isPrivate": 0,
   "password": "A Secret String",
@@ -231,7 +231,7 @@ module.exports = (app) => {
   ],
     "formationProcessDefinition": "1671227FBC248B809F74D9BA29B4731F130BCD93",
     "executionProcessDefinition": "E6534E45E2B26AF4FBB64E42CE7FC66688696483",
-    "governingArchetypes": ["ADB20020CE08E2DF5ABB3818590C3E2BA2035202"],
+    "governingArchetypes": ["ADB20020CE08E2DF5ABB3818590C3E2BA2035202"]
 }
 
 *
@@ -643,8 +643,8 @@ module.exports = (app) => {
           "name": "Quantity",
           "value": 10
         }
-      ]
-      "governingAgreements": ["B3AEAD4717EFF80BDDF5E22110521029A8460FFB"],
+      ],
+      "governingAgreements": ["B3AEAD4717EFF80BDDF5E22110521029A8460FFB"]
     }
   *
   *
