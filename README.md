@@ -12,7 +12,7 @@
 <table>
   <tr>
     <td>The <strong>Blackstone</strong> codebase is a collection of smart contracts and RESTful APIs which together form the basis for the Agreements Network.
-    <br/>
+    <br/><br/>
     It is named after <a href="https://en.wikipedia.org/wiki/William_Blackstone">Sir William Blackstone</a>, an English jurist, judge, and politician of the eighteenth century
     <br/><br/>
     While some of the code is geared towards its use in the Agreements Network, the lower-level functions and smart contracts are highly reusable and suited to build any blochchain-based ecosystem application.</td>
@@ -62,15 +62,18 @@ The following serious of steps outlines basic interactions with the Blackstone A
 `POST http://localhost:3080/users`
 
 Body (`application/json`):
-```
+
+```json
 {
 	"user": "john.smith",
 	"email": "john.smith@example.com",
 	"password": "298yefh028"
 }
 ```
+
 Response:
-```
+
+```json
 {
     "address": "AB3399395E9CAB5434022D1992D31BB3ACC2E3F1",
     "id": "john.smith"
@@ -82,7 +85,8 @@ Response:
 `PUT http://localhost:3080/users/login`
 
 Body (`application/json`):
-```
+
+```json
 {
 	"user": "john.smith",
 	"password": "298yefh028"
@@ -99,31 +103,31 @@ Use the BPMN model [here](docs/files/QuickStartModel.bpmn) as `application/xml` 
 
 Part of the `application/json` response gives you the information about the deployed processes `Agreement Formation` and `Agreement Execution`. Note the `address` fields of the two created processes:
 
-```
-    "model": {
-        "id": "1537809995472_Gc4N66ORqT",
-        "address": "81420B0BD90FBDA9765207569DA0FF6D4A429F65"
+```json
+"model": {
+    "id": "1537809995472_Gc4N66ORqT",
+    "address": "81420B0BD90FBDA9765207569DA0FF6D4A429F65"
+},
+"processes": [
+    {
+        "processDefinitionId": "Process_104nkeu",
+        "interfaceId": "Agreement Formation",
+        "processName": "Sale Formation",
+        "modelAddress": "81420B0BD90FBDA9765207569DA0FF6D4A429F65",
+        "address": "09F5727636788958DAEF32500830F0AD4EB34901",
+        "private": false,
+        "author": "AB3399395E9CAB5434022D1992D31BB3ACC2E3F1"
     },
-    "processes": [
-        {
-            "processDefinitionId": "Process_104nkeu",
-            "interfaceId": "Agreement Formation",
-            "processName": "Sale Formation",
-            "modelAddress": "81420B0BD90FBDA9765207569DA0FF6D4A429F65",
-            "address": "09F5727636788958DAEF32500830F0AD4EB34901",
-            "private": false,
-            "author": "AB3399395E9CAB5434022D1992D31BB3ACC2E3F1"
-        },
-        {
-            "processDefinitionId": "Process_0gzkjfe",
-            "interfaceId": "Agreement Execution",
-            "processName": "Sale Execution",
-            "modelAddress": "81420B0BD90FBDA9765207569DA0FF6D4A429F65",
-            "address": "E6534E45E2B26AF4FBB64E42CE7FC66688696483",
-            "private": false,
-            "author": "AB3399395E9CAB5434022D1992D31BB3ACC2E3F1"
-        }
-    ],
+    {
+        "processDefinitionId": "Process_0gzkjfe",
+        "interfaceId": "Agreement Execution",
+        "processName": "Sale Execution",
+        "modelAddress": "81420B0BD90FBDA9765207569DA0FF6D4A429F65",
+        "address": "E6534E45E2B26AF4FBB64E42CE7FC66688696483",
+        "private": false,
+        "author": "AB3399395E9CAB5434022D1992D31BB3ACC2E3F1"
+    }
+],
 ```
 
 ### Create an Agreement Archetype
@@ -133,7 +137,8 @@ Now we can make an archetype for new agreements by calling
 `POST http://localhost:3080/archetypes`
 
 Body (`application/json`):
-```
+
+```json
 {
     "name": "My Sales Archetype",
     "description": "A template agreement for the sale of goods between a Buyer and a Seller",
@@ -160,7 +165,7 @@ Body (`application/json`):
 
 This will return the address of the new archetype for reference:
 
-```
+```json
 {
     "address": "4EF5DAB8CE089AD7F2CE7A04A7CB5DB1C58DB707"
 }
@@ -174,37 +179,38 @@ Note that we're using the currently logged-in user as both the "Buyer" and "Sell
 `POST http://localhost:3080/agreements`
 
 Body (`application/json`):
-```
+
+```json
+{
+  "name": "Sale No. 7364",
+  "archetype": "4EF5DAB8CE089AD7F2CE7A04A7CB5DB1C58DB707",
+  "isPrivate": false,
+  "maxNumberOfEvents": "10",
+  "parameters": [{
+      "name": "Buyer",
+      "type": 8,
+      "value": "AB3399395E9CAB5434022D1992D31BB3ACC2E3F1"
+    },
     {
-      "name": "Sale No. 7364",
-      "archetype": "4EF5DAB8CE089AD7F2CE7A04A7CB5DB1C58DB707",
-      "isPrivate": false,
-      "maxNumberOfEvents": "10",
-      "parameters": [{
-          "name": "Buyer",
-          "type": 8,
-          "value": "AB3399395E9CAB5434022D1992D31BB3ACC2E3F1"
-        },
-        {
-          "name": "Seller",
-          "type": 8,
-          "value": "AB3399395E9CAB5434022D1992D31BB3ACC2E3F1"
-        },
-        {
-          "name": "Item Description",
-          "value": "Lamborghine (red, 2016)"
-        },
-        {
-          "name": "Price",
-          "value": "160000.00"
-        }
-      ]
+      "name": "Seller",
+      "type": 8,
+      "value": "AB3399395E9CAB5434022D1992D31BB3ACC2E3F1"
+    },
+    {
+      "name": "Item Description",
+      "value": "Lamborghine (red, 2016)"
+    },
+    {
+      "name": "Price",
+      "value": "160000.00"
     }
+  ]
+}
 ```
 
 This will return the address of the new archetype for reference:
 
-```
+```json
 {
     "address": "B3AEAD4717EFF80BDDF5E22110521029A8460FFB"
 }
@@ -220,7 +226,7 @@ According to the Process Definition covering the formation of this sales agreeme
 
 `GET http://localhost:3080/tasks`
 
-```
+```json
 [
     {
         "state": 4,
@@ -272,13 +278,16 @@ Signing and completing both these tasks also completes the Formation of the agre
 # <a name="Tutorials">Tutorials</a>
 
 ### Tools (coming soon)
-Provides an overview of the tools, specifically EPM to help understand how to deploy and wire smart contracts
+
+Provides an overview of the tools, specifically how the Agreements Network leverages `burrow deploy`. This will help users understand how to deploy and wire smart contracts utilizing `burrow`.
 
 ### Smart Contract Framework (coming soon)
-Delivers an introduction to the smart contracts in this project and walks through the concepts to deploy a basic framework of upgradeable smart contracts to build applications.
+
+Delivers an introduction to the smart contracts in this project and walks through the concepts to deploy a basic framework of upgradeable packages of smart contracts wired together as micro-services in order to build applications.
 
 ### My Application (coming soon)
-Build a web app to interact with your smart contracts.
+
+Build a web app to interact with your archetypes and active agreements.
 
 
 # <a name="DevelopAndTest">Develop & Test</a>
@@ -324,10 +333,10 @@ make test_api
 To restart the API but leave the chain running follow this sequence:
 
 1. `make run` -> this operation is non-blocking and will return you to your terminal. It will background processes that will follow the logs.
-2a. To turn everything off (including the chain) from here run `make clean`.
-2b. To only reboot the API but leave the chain running from here run `make restart_api`. This is a *blocking* call and will not return you to your terminal.
-3a. To reboot the API (again): `ctrl+c` then `make restart_api`. Rinse and repeat as needed.
-3b. To turn everything off or reset the chain or whatever: `ctrl+c` then `make clean`.
+2. To turn everything off (including the chain) from here run `make clean`.
+3. To only reboot the API but leave the chain running from here run `make restart_api`. This is a *blocking* call and will not return you to your terminal.
+4. To reboot the API (again): `ctrl+c` then `make restart_api`. Rinse and repeat as needed.
+5. To turn everything off or reset the chain or whatever: `ctrl+c` then `make clean`.
 
 ### Cleanup
 
@@ -390,4 +399,3 @@ deploys the AN contracts, and leaves the contracts and chain intact. Afterwards:
 cd api
 npm run test
 ```
-
