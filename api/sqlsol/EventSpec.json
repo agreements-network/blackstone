@@ -1,0 +1,42 @@
+[
+	{
+		"TableName" : "TEST_TABLE",
+		"Filter" : "Log1Text = 'EVENT_TEST'",
+		"Event"  : {
+			"anonymous": false,
+			"inputs": [{
+				"indexed": true,
+				"name": "name",
+				"type": "string"
+			}, {
+				"indexed": false,
+				"name": "key",
+				"type": "uint256"
+			}, {
+				"indexed": false,
+				"name": "blocknum",
+				"type": "uint256"
+			}, {
+				"indexed": false,
+				"name": "somestr",
+				"type": "string"
+			}, {
+				"indexed": false,
+				"name": "this",
+				"type": "address"
+			}, {
+				"indexed": false,
+				"name": "instance",
+				"type": "uint256"
+			}],
+			"name": "UpdateTable",
+			"type": "event"
+		},
+		"Columns"  : {
+			"key"		: {"name" : "Index",    "primary" : true},
+			"blocknum"  : {"name" : "Block",    "primary" : false},
+			"somestr"	: {"name" : "String",   "primary" : false},
+			"instance" 	: {"name" : "Instance", "primary" : false}
+		}
+	}
+]
