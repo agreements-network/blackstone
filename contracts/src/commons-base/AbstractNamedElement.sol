@@ -33,7 +33,7 @@ contract AbstractNamedElement is NamedElement {
 	 * @dev Returns the name of this contract.
 	 * @return the bytes32 name
 	 */
-	function getName() public view returns (bytes32) {
+	function getName() external view returns (bytes32) {
 		return name;
 	}
 	

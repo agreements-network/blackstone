@@ -4,7 +4,7 @@ pragma solidity ^0.4.23;
  * @title DataStorage Interface
  * @dev Definition of the public API for Data Storage 
  */
-interface DataStorage {
+contract DataStorage {
 
   /**
    * @dev Returns the data type of the Data object identified by the given id

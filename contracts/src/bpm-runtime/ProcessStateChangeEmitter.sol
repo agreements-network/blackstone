@@ -7,7 +7,7 @@ import "bpm-runtime/ProcessStateChangeListener.sol";
  * @title ProcessStateChangeEmitter
  * @dev Interface contract for emitting process state change events
  */
-interface ProcessStateChangeEmitter {
+contract ProcessStateChangeEmitter {
 
   /**
     * @dev Adds a ProcessStateChangeListener to listeners collection

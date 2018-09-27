@@ -7,7 +7,7 @@ import "commons-collections/DataStorage.sol";
  * @dev API for a contract that manages associations of scope definitions to addresses. This contract
  * is meant to be used in conjunction with DataStorage contracts since conditional scopes can be resolved at runtime with the help of a DataStorage.
  */
-interface AddressScopes {
+contract AddressScopes {
 
 	/**
 	 * @dev Associates the given address with a scope qualifier for a given context.

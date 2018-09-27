@@ -8,7 +8,7 @@ import "bpm-runtime/BpmService.sol";
  * @title WorkflowProxy
  * @dev Represents a proxy contract to interact with a ProcessInstance on behalf of a user account, e.g. to complete activities assigned to this proxy contract.
  */
-interface WorkflowProxy {
+contract WorkflowProxy {
 
 	/**
 	 * @dev Completes the specified activity using the given BpmService to locate the relevant ProcessInstance.
