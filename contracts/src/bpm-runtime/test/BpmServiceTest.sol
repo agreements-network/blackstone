@@ -3,6 +3,7 @@ pragma solidity ^0.4.23;
 import "commons-base/BaseErrors.sol";
 import "commons-base/SystemOwned.sol";
 import "commons-utils/ArrayUtilsAPI.sol";
+import "commons-utils/TypeUtilsAPI.sol";
 import "commons-collections/AbstractDataStorage.sol";
 import "commons-management/AbstractDbUpgradeable.sol";
 import "commons-auth/ParticipantsManager.sol";
@@ -28,6 +29,7 @@ import "bpm-runtime/TransitionConditionResolver.sol";
 
 contract BpmServiceTest {
 
+	using TypeUtilsAPI for bytes32;
 	using ArrayUtilsAPI for bytes32[];
 	using BpmRuntimeLib for BpmRuntime.ProcessGraph;
 	using BpmRuntimeLib for BpmRuntime.ActivityNode;
@@ -511,7 +513,7 @@ contract BpmServiceTest {
 
 		// Validate to set the start activity and enable runtime configuration
 		(valid, errorMsg) = pd.validate();
-		if (!valid) return bytes32ToString(errorMsg);
+		if (!valid) return errorMsg.toString();
 
 		ProcessInstance pi = new DefaultProcessInstance(pd, this, EMPTY);
 		graph.configure(pi);
@@ -562,18 +564,18 @@ contract BpmServiceTest {
 	/**
 	 * @dev Uses a simple process flow in order to test BpmService-internal functions.
 	 */
-	function testInternalProcessExecution() external returns (uint, string) {
+	function testInternalProcessExecution() external returns (string) {
 
 		// re-usable variables for return values
 		uint error;
 		address addr;
 
 		(error, addr) = repository.createProcessModel("testModel3", "Test Model 3", [1,0,0], modelAuthor, false, EMPTY, EMPTY);
-		if (addr == 0x0) return (BaseErrors.INVALID_STATE(), "Unable to create a ProcessModel");
+		if (addr == 0x0) return "Unable to create a ProcessModel";
 		ProcessModel pm = ProcessModel(addr);
 
 		(error, addr) = pm.createProcessDefinition("ProcessDefinitionSequence");
-		if (addr == 0x0) return (BaseErrors.INVALID_STATE(), "Unable to create a ProcessDefinition");
+		if (addr == 0x0) return "Unable to create a ProcessDefinition";
 		ProcessDefinition pd = ProcessDefinition(addr);
 
 		pd.createActivityDefinition(activityId1, BpmModel.ActivityType.TASK, BpmModel.TaskType.NONE, BpmModel.TaskBehavior.SEND, EMPTY, false, EMPTY, EMPTY, EMPTY);
@@ -590,33 +592,33 @@ contract BpmServiceTest {
 		ProcessInstance pi = service.createDefaultProcessInstance(pd, this, EMPTY);
 
 		pi.initRuntime();
-		if (pi.getState() != uint(BpmRuntime.ProcessInstanceState.ACTIVE)) return (error, "PI should be ACTIVE after runtime initiation");
+		if (pi.getState() != uint(BpmRuntime.ProcessInstanceState.ACTIVE)) return "PI should be ACTIVE after runtime initiation";
 		if (address(pi).call(bytes4(keccak256(abi.encodePacked("initRuntime()")))))
-			return (error, "It should not be possible to initiate an ACTIVE PI again");
+			return "It should not be possible to initiate an ACTIVE PI again";
 		// TODO test more error conditions around pi.initRuntime(), e.g. invalid PD, etc.
 
 		service.addProcessInstance(pi);
 		error = pi.execute(service);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Unexpected error executing the PI");
+		if (error != BaseErrors.NO_ERROR()) return "Unexpected error executing the PI";
 
 		// verify DB state
-		if (service.getDatabase().getNumberOfProcessInstances() != 1) return (BaseErrors.INVALID_STATE(), "There should be 1 PI in the DB");
-		if (service.getDatabase().getNumberOfActivityInstances() != 3) return (BaseErrors.INVALID_STATE(), "There should be 3 AIs in the DB");
-		if (pi.getNumberOfActivityInstances() != 3) return (BaseErrors.INVALID_STATE(), "There should be 3 AIs in the ProcessInstance");
+		if (service.getDatabase().getNumberOfProcessInstances() != 1) return "There should be 1 PI in the DB";
+		if (service.getDatabase().getNumberOfActivityInstances() != 3) return "There should be 3 AIs in the DB";
+		if (pi.getNumberOfActivityInstances() != 3) return "There should be 3 AIs in the ProcessInstance";
 
 		// verify individual activity instances
 		uint8 state;
 		( , , , , , state) = pi.getActivityInstanceData(pi.getActivityInstanceAtIndex(0));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return (state, "Activity1 should be completed");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity1 should be completed";
 		( , , , , , state) = pi.getActivityInstanceData(pi.getActivityInstanceAtIndex(1));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "Activity2 should be completed");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity2 should be completed";
 		( , , , , , state) = pi.getActivityInstanceData(pi.getActivityInstanceAtIndex(2));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "Activity3 should be completed");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity3 should be completed";
 
 		// verify process state
-		if (pi.getState() != uint8(BpmRuntime.ProcessInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "The PI should be completed");
+		if (pi.getState() != uint8(BpmRuntime.ProcessInstanceState.COMPLETED)) return "The PI should be completed";
 
-		return (BaseErrors.NO_ERROR(), SUCCESS);
+		return SUCCESS;
 	}
 
 	/**
@@ -668,7 +670,7 @@ contract BpmServiceTest {
 		
 		// Validate to set the start activity and enable runtime configuration
 		(bool valid, bytes32 errorMsg) = pd.validate();
-		if (!valid) return bytes32ToString(errorMsg);
+		if (!valid) return errorMsg.toString();
 
 		TestBpmService service = getNewTestBpmService();
 		service.setProcessModelRepository(repository);
@@ -716,7 +718,7 @@ contract BpmServiceTest {
 	/**
 	 * Tests invocation of application completion functions in general
 	 */
-	function testSequentialServiceApplications() external returns (uint, string) {
+	function testSequentialServiceApplications() external returns (string) {
 
 		// re-usable variables for return values
 		uint error;
@@ -736,29 +738,29 @@ contract BpmServiceTest {
 		FailureServiceApplication serviceApp = new FailureServiceApplication();
 
 		(error, addr) = repository.createProcessModel("serviceApplicationsModel", "Service Applications", [1,0,0], modelAuthor, false, EMPTY, EMPTY);
-		if (addr == 0x0) return (BaseErrors.INVALID_STATE(), "Unable to create a ProcessModel");
+		if (addr == 0x0) return "Unable to create a ProcessModel";
 		ProcessModel pm = ProcessModel(addr);
 
 		error = applicationRegistry.addApplication(serviceApp1Id, BpmModel.ApplicationType.EVENT, eventApp, bytes4(EMPTY), EMPTY);
 		error = applicationRegistry.addApplication(serviceApp2Id, BpmModel.ApplicationType.SERVICE, serviceApp, bytes4(EMPTY), EMPTY);
 
 		(error, addr) = pm.createProcessDefinition("ServiceApplicationProcess");
-		if (addr == 0x0) return (BaseErrors.INVALID_STATE(), "Unable to create a ProcessDefinition");
+		if (addr == 0x0) return "Unable to create a ProcessDefinition";
 		ProcessDefinition pd = ProcessDefinition(addr);
 
 		// Activity1 is configured as an asynchronous invocation in order to test the IN/OUT data mappings
 		error = pd.createActivityDefinition(activityId1, BpmModel.ActivityType.TASK, BpmModel.TaskType.EVENT, BpmModel.TaskBehavior.SENDRECEIVE, EMPTY, false, serviceApp1Id, EMPTY, EMPTY);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Error creating EVENT task activity1 definition");
+		if (error != BaseErrors.NO_ERROR()) return "$1";
 		pd.createDataMapping(activityId1, BpmModel.Direction.IN, eventApp.inDataIdAge(), "Age", "storage", 0x0);
 		pd.createDataMapping(activityId1, BpmModel.Direction.IN, eventApp.inDataIdGreeting(), "Message", EMPTY, 0x0);
 		pd.createDataMapping(activityId1, BpmModel.Direction.OUT, eventApp.outDataIdResult(), "Response", EMPTY, 0x0);
 		error = pd.createActivityDefinition(activityId2, BpmModel.ActivityType.TASK, BpmModel.TaskType.SERVICE, BpmModel.TaskBehavior.SEND, EMPTY, false, serviceApp2Id, EMPTY, EMPTY);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Error creating SERVICE task activity2 definition");
+		if (error != BaseErrors.NO_ERROR()) return "$1";
 		pd.createTransition(activityId1, activityId2);
 		
 		// Validate to set the start activity and enable runtime configuration
 		(valid, errorMsg) = pd.validate();
-		if (!valid) return (BaseErrors.INVALID_STATE(), bytes32ToString(errorMsg));
+		if (!valid) return errorMsg.toString();
 
 		// create a PI and set up data content for testing
 		// NOTE: must match data mapping instructions in activity definitions above!
@@ -768,67 +770,67 @@ contract BpmServiceTest {
 		pi.setDataValueAsString("Message", "Hello World");
 
 		error = service.startProcessInstance(pi);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Unexpected error during process start");
+		if (error != BaseErrors.NO_ERROR()) return "Unexpected error during process start";
 
 		// verify PI and AI state
-		if (pi.getState() != uint8(BpmRuntime.ProcessInstanceState.ACTIVE)) return (BaseErrors.INVALID_STATE(), "The PI should still be active");
+		if (pi.getState() != uint8(BpmRuntime.ProcessInstanceState.ACTIVE)) return "The PI should still be active";
 		( , , , addr, , state) = pi.getActivityInstanceData(pi.getActivityInstanceAtIndex(0));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.SUSPENDED)) return (BaseErrors.INVALID_STATE(), "Activity1 should be suspended due to async invocation");
-		if (addr != address(eventApp)) return (BaseErrors.INVALID_STATE(), "The event app should be the performer of activity1");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.SUSPENDED)) return "$1";
+		if (addr != address(eventApp)) return "$1";
 
 		// test IN data retrieval
 		(addr, dataPath) = pi.resolveInDataLocation(pi.getActivityInstanceAtIndex(0), eventApp.inDataIdAge());
-		if (addr != address(dataStorage)) return (BaseErrors.INVALID_STATE(), "The storage location for inDataIdAge should be the internal DataStorage");
-		if (dataPath != "Age") return (BaseErrors.INVALID_STATE(), "The dataPath after storage resolution for inDataIdAge is not correct");
+		if (addr != address(dataStorage)) return "$1";
+		if (dataPath != "Age") return "$1";
 		(addr, dataPath) = pi.resolveInDataLocation(pi.getActivityInstanceAtIndex(0), eventApp.inDataIdGreeting());
-		if (addr != address(pi)) return (BaseErrors.INVALID_STATE(), "The storage location for inDataIdGreeting should be the ProcessInstance");
-		if (dataPath != "Message") return (BaseErrors.INVALID_STATE(), "The dataPath after storage resolution for inDataIdGreeting is not correct");
+		if (addr != address(pi)) return "$1";
+		if (dataPath != "Message") return "$1";
 
 		// test failure scenarios for IN mappings
 		if (address(service).call(keccak256(abi.encodePacked("getActivityInDataAsUint(bytes32,bytes32)")), eventApp.activityInstanceId(), eventApp.inDataIdAge()))
-			return (BaseErrors.INVALID_STATE(), "Retrieving IN data outside of the application should REVERT");
+			return "Retrieving IN data outside of the application should REVERT";
 		if (address(eventApp).call(keccak256(abi.encodePacked("retrieveInDataAge()"))))
-			return (BaseErrors.INVALID_STATE(), "Retrieving IN data in the event application outside of APPLICATION state should REVERT");
+			return "$1";
 		// test successful IN mappings set during completion of the event
 		if (eventApp.getAgeDuringCompletion() != 78)
-			return (BaseErrors.INVALID_STATE(), "IN data inDataIdAge not correctly saved during completion of eventApp");
+			return "$1";
 		if (keccak256(abi.encodePacked(eventApp.getGreetingDuringCompletion())) != keccak256(abi.encodePacked("Hello World")))
-			return (BaseErrors.INVALID_STATE(), "IN data inDataIdGreeting not correctly saved during completion of eventApp");
+			return "$1";
 
 		// trying to set OUT data from here should fail
 		if (address(service).call(keccak256(abi.encodePacked("setActivityOutDataAsBytes32(bytes32,bytes32,bytes32)")), eventApp.activityInstanceId(), eventApp.inDataIdAge(), "bla"))
-			return (BaseErrors.INVALID_STATE(), "Retrieving IN data outside of the application should REVERT");
+			return "Retrieving IN data outside of the application should REVERT";
 		// try completing activity1 from here should fail
 		error = pi.completeActivity(pi.getActivityInstanceAtIndex(0), service);
-		if (error != BaseErrors.INVALID_ACTOR()) return (error, "Only the application should be able to complete the suspended EVENT task");
+		if (error != BaseErrors.INVALID_ACTOR()) return "$1";
 
 		error = eventApp.completeExternal(pi.getActivityInstanceAtIndex(0), "Hello back");
-		if (error != BaseErrors.NO_ERROR()) return (error, "Error completing event task activity1 via the application");
+		if (error != BaseErrors.NO_ERROR()) return "$1";
 
 		// // verify out data correctly stored in process by the event app
 		if (pi.getDataValueAsBytes32("Response") != "Hello back")
-			return (BaseErrors.INVALID_STATE(), "OUT data outDataIdResult not correctly stored in process via eventApp");
+			return "$1";
 
 		( , , , , , state) = pi.getActivityInstanceData(pi.getActivityInstanceAtIndex(0));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "Activity1 should be completed after the external completion");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "$1";
 		// activity2 should be interrupted at first
 		( , , , , , state) = pi.getActivityInstanceData(pi.getActivityInstanceAtIndex(1));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.INTERRUPTED)) return (BaseErrors.INVALID_STATE(), "Activity2 should be interrupted");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.INTERRUPTED)) return "Activity2 should be interrupted";
 
 		// reset the app and recover the process
 		serviceApp.reset();
 		// recovery should be possible from here and not via the service contract
 		error = pi.completeActivity(pi.getActivityInstanceAtIndex(1), service);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Unexpected error trying to recover interrupted activityInstance");
+		if (error != BaseErrors.NO_ERROR()) return "$1";
 		( , , , , , state) = pi.getActivityInstanceData(pi.getActivityInstanceAtIndex(1));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "Activity2 should be completed now");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity2 should be completed now";
 
-		if (pi.getState() != uint8(BpmRuntime.ProcessInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "The PI should be completed");
+		if (pi.getState() != uint8(BpmRuntime.ProcessInstanceState.COMPLETED)) return "The PI should be completed";
 
-		return (BaseErrors.NO_ERROR(), SUCCESS);
+		return SUCCESS;
 	}
 
-	function testParticipantResolution() external returns (uint, string) {
+	function testParticipantResolution() external returns (string) {
 
 		// re-usable variables for return values
 		uint error;
@@ -841,7 +843,7 @@ contract BpmServiceTest {
 		bytes32 dataPathOnProcess = "customAssignee";
 	
 		(error, addr) = repository.createProcessModel("conditionalPerformerModel", "Test Model CP", [1,0,0], modelAuthor, false, EMPTY, EMPTY);
-		if (addr == 0x0) return (BaseErrors.INVALID_STATE(), "Unable to create a ProcessModel");
+		if (addr == 0x0) return "Unable to create a ProcessModel";
 		ProcessModel pm = ProcessModel(addr);
 
 		// Create participants, one conditional performer and one direct one.
@@ -857,14 +859,14 @@ contract BpmServiceTest {
 		pm.addParticipant(participantId4, 0x0, dataPathOnProcess, EMPTY, 0x0);
 
 		(error, addr) = pm.createProcessDefinition("SingleTaskProcess");
-		if (addr == 0x0) return (BaseErrors.INVALID_STATE(), "Unable to create a ProcessDefinition");
+		if (addr == 0x0) return "Unable to create a ProcessDefinition";
 		ProcessDefinition pd = ProcessDefinition(addr);
 
 		// creating a valid model with a single activity
 		error = pd.createActivityDefinition(activityId1, BpmModel.ActivityType.TASK, BpmModel.TaskType.NONE, BpmModel.TaskBehavior.SEND, EMPTY, false, EMPTY, EMPTY, EMPTY);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Error creating USER task activity for participant1");
+		if (error != BaseErrors.NO_ERROR()) return "$1";
 		(valid, errorMsg) = pd.validate();
-		if (!valid) return (BaseErrors.INVALID_STATE(), bytes32ToString(errorMsg));
+		if (!valid) return errorMsg.toString();
 
 		TestProcessInstance pi = new TestProcessInstance(pd);
 		pi.setDataValueAsAddress(dataStorageId, dataStorage); // supports indirect navigation to DataStorage via a field in the process instance
@@ -873,25 +875,25 @@ contract BpmServiceTest {
 
 		bytes32 dataPath;
 		(addr, dataPath) = pi.resolveParticipant(participantId1);
-		if (addr != address(dataStorage)) return (BaseErrors.INVALID_STATE(), "DataStorage address not resolved correctly for participant1");
-		if (dataPath != dataPathOnAgreement) return (BaseErrors.INVALID_STATE(), "DataPath not resolved correctly for participant1");
+		if (addr != address(dataStorage)) return "$1";
+		if (dataPath != dataPathOnAgreement) return "$1";
 		(addr, dataPath) = pi.resolveParticipant(participantId2);
-		if (addr != address(this)) return (BaseErrors.INVALID_STATE(), "Participant2 performer address should point to this contract.");
-		if (dataPath != "") return (BaseErrors.INVALID_STATE(), "DataPath should be empty for explicit participant2");
+		if (addr != address(this)) return "$1";
+		if (dataPath != "") return "$1";
 		(addr, dataPath) = pi.resolveParticipant(participantId3);
-		if (addr != address(dataStorage)) return (BaseErrors.INVALID_STATE(), "DataStorage address not resolved correctly for participant3");
-		if (dataPath != dataPathOnAgreement) return (BaseErrors.INVALID_STATE(), "DataPath not resolved correctly for participant3");
+		if (addr != address(dataStorage)) return "$1";
+		if (dataPath != dataPathOnAgreement) return "$1";
 		(addr, dataPath) = pi.resolveParticipant(participantId4);
-		if (addr != address(pi)) return (BaseErrors.INVALID_STATE(), "Participant4 dataStorage should point to the ProcessInstance.");
-		if (dataPath != dataPathOnProcess) return (BaseErrors.INVALID_STATE(), "DataPath for participant4 not resolved correctly");
+		if (addr != address(pi)) return "$1";
+		if (dataPath != dataPathOnProcess) return "$1";
 
-		return (BaseErrors.NO_ERROR(), SUCCESS);
+		return SUCCESS;
 	}
 
 	/**
 	 * Tests a simple process flow using public BpmService API
 	 */
-	function testSequentialProcessWithUserTask() external returns (uint, string) {
+	function testSequentialProcessWithUserTask() external returns (string) {
 
 		// re-usable variables for return values
 		uint error;
@@ -905,14 +907,14 @@ contract BpmServiceTest {
 		WorkflowUserAccount proxy1 = new WorkflowUserAccount("user1", this, 0x0);
 		WorkflowUserAccount organizationUser = new WorkflowUserAccount("TomHanks", this, 0x0);
 		DefaultOrganization org1 = new DefaultOrganization(emptyAddressArray);
-		if (!org1.addUser(organizationUser)) return (error, "Unable to add user account to organization");
+		if (!org1.addUser(organizationUser)) return "Unable to add user account to organization";
 
 		// Register a typical WEB application with only a webform
 		error = applicationRegistry.addApplication("Webform1", BpmModel.ApplicationType.WEB, 0x0, bytes4(EMPTY), "MyCustomWebform");
-		if (error != BaseErrors.NO_ERROR()) return (error, "Error registering WEB application for user task");
+		if (error != BaseErrors.NO_ERROR()) return "$1";
 
 		(error, addr) = repository.createProcessModel("testModelUserTasks", "UserTask Test Model", [1,0,0], modelAuthor, false, EMPTY, EMPTY);
-		if (addr == 0x0) return (BaseErrors.INVALID_STATE(), "Unable to create a ProcessModel");
+		if (addr == 0x0) return "Unable to create a ProcessModel";
 		ProcessModel pm = ProcessModel(addr);
 
 		// Register participants to be used for USER tasks
@@ -920,15 +922,15 @@ contract BpmServiceTest {
 		pm.addParticipant(participantId2, org1, EMPTY, EMPTY, 0x0); // organization participant
 
 		(error, addr) = pm.createProcessDefinition("UserTaskProcess");
-		if (addr == 0x0) return (BaseErrors.INVALID_STATE(), "Unable to create a ProcessDefinition");
+		if (addr == 0x0) return "Unable to create a ProcessDefinition";
 		ProcessDefinition pd = ProcessDefinition(addr);
 
 		// Activity 1 is assigned to proxy1
 		// Activity 2 is assigned to the organizationUser via the org1 organization
 		error = pd.createActivityDefinition(activityId1, BpmModel.ActivityType.TASK, BpmModel.TaskType.USER, BpmModel.TaskBehavior.SENDRECEIVE, participantId1, false, "Webform1", EMPTY, EMPTY);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Error creating USER task activity for participant1");
+		if (error != BaseErrors.NO_ERROR()) return "$1";
 		error = pd.createActivityDefinition(activityId2, BpmModel.ActivityType.TASK, BpmModel.TaskType.USER, BpmModel.TaskBehavior.SENDRECEIVE, participantId2, false, "Webform1", EMPTY, EMPTY);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Error creating USER task activity for participant2");
+		if (error != BaseErrors.NO_ERROR()) return "$1";
 		pd.createTransition(activityId1, activityId2);
 
 		pd.createDataMapping(activityId1, BpmModel.Direction.IN, "nameAccessPoint", "Name", "storage", 0x0);
@@ -941,89 +943,89 @@ contract BpmServiceTest {
 
 		// Validate to set the start activity and enable runtime configuration
 		(valid, errorMsg) = pd.validate();
-		if (!valid) return (BaseErrors.INVALID_STATE(), bytes32ToString(errorMsg));
+		if (!valid) return errorMsg.toString();
 
 		// test error conditions for creating a process via model and pd IDs
 		if (address(service).call(bytes4(keccak256(abi.encodePacked("startProcessFromRepository(bytes32,bytes32,bytes32)"))), "FakeModelIdddddd", "UserTaskProcess", EMPTY))
-			return (BaseErrors.INVALID_STATE(), "Starting a process with invalid model ID should REVERT");
+			return "Starting a process with invalid model ID should REVERT";
 		if (address(service).call(bytes4(keccak256(abi.encodePacked("startProcessFromRepository(bytes32,bytes32,bytes32)"))), pm.getId(), "TotallyFakeProcessssId", EMPTY))
-			return (BaseErrors.INVALID_STATE(), "Starting a process with invalid process definition ID should REVERT");
+			return "$1";
 
 		// test successful creation via model and pd IDs
 		(error, addr) = service.startProcessFromRepository(pm.getId(), "UserTaskProcess", EMPTY);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Unexpected error during process start");
-		if (addr == 0x0) return (BaseErrors.INVALID_STATE(), "No error during process start, but PI address is empty!");
+		if (error != BaseErrors.NO_ERROR()) return "Unexpected error during process start";
+		if (addr == 0x0) return "$1";
 		ProcessInstance pi = ProcessInstance(addr);
 
 		// some of the data mappings reference a DataStorage object that needs to be set in the PI
 		pi.setDataValueAsAddress("storage", dataStorage);
 
 		// verify DB state
-		if (service.getNumberOfProcessInstances() != 1) return (BaseErrors.INVALID_STATE(), "There should be 1 PI after process start");
-		if (service.getNumberOfActivityInstances(pi) != 1) return (BaseErrors.INVALID_STATE(), "There should be 1 AI after process start");
-		if (pi.getNumberOfActivityInstances() != 1) return (BaseErrors.INVALID_STATE(), "There should be 1 AI in the ProcessInstance after start");
+		if (service.getNumberOfProcessInstances() != 1) return "There should be 1 PI after process start";
+		if (service.getNumberOfActivityInstances(pi) != 1) return "There should be 1 AI after process start";
+		if (pi.getNumberOfActivityInstances() != 1) return "$1";
 
 		// verify individual activity instances
 		uint8 state;
 		( , , , addr, , state) = pi.getActivityInstanceData(pi.getActivityInstanceAtIndex(0));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.SUSPENDED)) return (BaseErrors.INVALID_STATE(), "Activity1 should be suspended");
-		if (addr != address(proxy1)) return (BaseErrors.INVALID_STATE(), "Activity1 should be assigned to proxy1");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.SUSPENDED)) return "Activity1 should be suspended";
+		if (addr != address(proxy1)) return "Activity1 should be assigned to proxy1";
 
 		// test data mappings via user-assigned task
 		if (address(service).call(bytes4(keccak256(abi.encodePacked("getActivityInDataAsBytes32(bytes32,bytes32)"))), pi.getActivityInstanceAtIndex(0), "nameAccessPoint"))
-			 return (BaseErrors.INVALID_STATE(), "It should not be possible to access IN data mappings from a non-performer address");
+			 return "$1";
 		if (proxy1.getActivityInDataAsBytes32(pi.getActivityInstanceAtIndex(0), "nameAccessPoint", service) != "Smith")
-			return (BaseErrors.INVALID_STATE(), "IN data mapping Name should return correctly via user proxy1");
+			return "IN data mapping Name should return correctly via user proxy1";
 		proxy1.setActivityOutDataAsBool(pi.getActivityInstanceAtIndex(0), "approvedAccessPoint", true, service);
 
 		// complete user task 1 and check outcome
 		error = organizationUser.completeActivity(pi.getActivityInstanceAtIndex(0), service);
-		if (error != BaseErrors.INVALID_ACTOR()) return (BaseErrors.INVALID_STATE(), "Expected error for organization user attempting to complete activity1");
+		if (error != BaseErrors.INVALID_ACTOR()) return "$1";
 		error = proxy1.completeActivity(pi.getActivityInstanceAtIndex(0), service);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Unexpected error attempting to complete activity1 user task via assigned proxy1 in activity1");
+		if (error != BaseErrors.NO_ERROR()) return "$1";
 		( , , , , addr, state) = pi.getActivityInstanceData(pi.getActivityInstanceAtIndex(0));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "Activity1 should be completed");
-		if (addr != address(proxy1)) return (BaseErrors.INVALID_STATE(), "Activity1 should be completedBy proxy1");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity1 should be completed";
+		if (addr != address(proxy1)) return "Activity1 should be completedBy proxy1";
 
 		// verify new world state
-		if (service.getNumberOfActivityInstances(pi) != 2) return (BaseErrors.INVALID_STATE(), "There should be 2 AIs after task1 completion");
-		if (pi.getNumberOfActivityInstances() != 2) return (BaseErrors.INVALID_STATE(), "There should be 2 AIs in the ProcessInstance after task1 completion");
+		if (service.getNumberOfActivityInstances(pi) != 2) return "There should be 2 AIs after task1 completion";
+		if (pi.getNumberOfActivityInstances() != 2) return "$1";
 		( , , , addr, , state) = pi.getActivityInstanceData(pi.getActivityInstanceAtIndex(1));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.SUSPENDED)) return (BaseErrors.INVALID_STATE(), "Activity2 should be suspended");
-		if (addr != address(org1)) return (BaseErrors.INVALID_STATE(), "Activity2 should be assigned to the organization org1");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.SUSPENDED)) return "Activity2 should be suspended";
+		if (addr != address(org1)) return "$1";
 
 		// test data mappings via organization-assigned task
 		if (address(proxy1).call(bytes4(keccak256(abi.encodePacked("getActivityInDataAsBool(bytes32,bytes32)"))), pi.getActivityInstanceAtIndex(1), "approvedAccessPoint"))
-			return (BaseErrors.INVALID_STATE(), "It should not be possible to access IN data mappings from a user account that is not the performer");
+			return "$1";
 		if (organizationUser.getActivityInDataAsBool(pi.getActivityInstanceAtIndex(1), "approvedAccessPoint", service) != true)
-			return (BaseErrors.INVALID_STATE(), "IN data mapping Approved should return true via user organizationUser in activity2");
+			return "$1";
 		organizationUser.setActivityOutDataAsUint(pi.getActivityInstanceAtIndex(1), "ageAccessPoint", 21, service);
 
 		// complete user task 2 and check outcome
 		error = proxy1.completeActivity(pi.getActivityInstanceAtIndex(1), service);
-		if (error != BaseErrors.INVALID_ACTOR()) return (BaseErrors.INVALID_STATE(), "Expected error for proxy1 account attempting to complete activity2");
+		if (error != BaseErrors.INVALID_ACTOR()) return "$1";
 		// complete the activity here using an OUT data mapping to set the Age
 		error = organizationUser.completeActivityWithUintData(pi.getActivityInstanceAtIndex(1), service, "Age", 21);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Unexpected error attempting to complete activity2 user task via organizationUser");
+		if (error != BaseErrors.NO_ERROR()) return "$1";
 		( , , , , addr, state) = pi.getActivityInstanceData(pi.getActivityInstanceAtIndex(1));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "Activity2 should be completed");
-		if (addr != address(organizationUser)) return (BaseErrors.INVALID_STATE(), "Activity2 should be completedBy the organizationUser");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity2 should be completed";
+		if (addr != address(organizationUser)) return "$1";
 		// check the fields that were set in the PI and data storage
 		if (pi.getDataValueAsBool("Approved") != true)
-			return (BaseErrors.INVALID_STATE(), "The Approved field in the PI should've been set via data mappings");
+			return "$1";
 		if (dataStorage.getDataValueAsUint("Age") != 21)
-			return (BaseErrors.INVALID_STATE(), "The Age field in the DataStorge should've been set at AI completion");
+			return "$1";
 
 		// verify process state
-		if (pi.getState() != uint8(BpmRuntime.ProcessInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "The PI should be completed");
+		if (pi.getState() != uint8(BpmRuntime.ProcessInstanceState.COMPLETED)) return "The PI should be completed";
 
-		return (BaseErrors.NO_ERROR(), SUCCESS);
+		return SUCCESS;
 	}
 
 	/**
 	 * Tests aborting a process midflight
 	 */
-	function testProcessAbort() external returns (uint, string) {
+	function testProcessAbort() external returns (string) {
 
 		// re-usable variables for return values
 		uint error;
@@ -1036,75 +1038,75 @@ contract BpmServiceTest {
 		WorkflowProxy proxy1 = new WorkflowUserAccount("user1", this, 0x0);
 	
 		(error, addr) = repository.createProcessModel("testModelAbort", "Abort Test Model", [1,0,0], modelAuthor, false, EMPTY, EMPTY);
-		if (addr == 0x0) return (BaseErrors.INVALID_STATE(), "Unable to create a ProcessModel");
+		if (addr == 0x0) return "Unable to create a ProcessModel";
 		ProcessModel pm = ProcessModel(addr);
 
 		// Register participants to be used for USER tasks
 		pm.addParticipant(participantId1, proxy1, EMPTY, EMPTY, 0x0); // user participant
 
 		(error, addr) = pm.createProcessDefinition("AbortProcess");
-		if (addr == 0x0) return (BaseErrors.INVALID_STATE(), "Unable to create a ProcessDefinition");
+		if (addr == 0x0) return "Unable to create a ProcessDefinition";
 		ProcessDefinition pd = ProcessDefinition(addr);
 
 		// Activity 1 is a NONE
 		// Activity 2 is user task
 		error = pd.createActivityDefinition(activityId1, BpmModel.ActivityType.TASK, BpmModel.TaskType.NONE, BpmModel.TaskBehavior.SEND, EMPTY, false, EMPTY, EMPTY, EMPTY);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Error creating NONE task activity");
+		if (error != BaseErrors.NO_ERROR()) return "Error creating NONE task activity";
 		error = pd.createActivityDefinition(activityId2, BpmModel.ActivityType.TASK, BpmModel.TaskType.USER, BpmModel.TaskBehavior.SENDRECEIVE, participantId1, false, EMPTY, EMPTY, EMPTY);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Error creating USER task activity for participant1");
+		if (error != BaseErrors.NO_ERROR()) return "$1";
 		pd.createTransition(activityId1, activityId2);
 		
 		// Validate to set the start activity and enable runtime configuration
 		(valid, errorMsg) = pd.validate();
-		if (!valid) return (BaseErrors.INVALID_STATE(), bytes32ToString(errorMsg));
+		if (!valid) return errorMsg.toString();
 
 		// create two process instances, one via the BpmService.startProcess function and one via direct constructor
 		// to make sure they are both abortable by the ower (this contract)
 		(error, addr) = service.startProcess(pd, EMPTY);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Unexpected error during process start");
-		if (addr == 0x0) return (BaseErrors.INVALID_STATE(), "No error during process start, but PI address is empty!");
+		if (error != BaseErrors.NO_ERROR()) return "Unexpected error during process start";
+		if (addr == 0x0) return "$1";
 		ProcessInstance pi1 = ProcessInstance(addr);
 		ProcessInstance pi2 = new DefaultProcessInstance(pd, 0x0, EMPTY);
 		service.startProcessInstance(pi2);
 
 		// verify DB state
-		if (service.getNumberOfProcessInstances() != 2) return (BaseErrors.INVALID_STATE(), "There should be 1 PI after process start");
-		if (service.getNumberOfActivityInstances(pi1) != 2) return (BaseErrors.INVALID_STATE(), "There should be 2 AIs in pi1");
-		if (service.getNumberOfActivityInstances(pi2) != 2) return (BaseErrors.INVALID_STATE(), "There should be 2 AIs in pi2");
+		if (service.getNumberOfProcessInstances() != 2) return "There should be 1 PI after process start";
+		if (service.getNumberOfActivityInstances(pi1) != 2) return "There should be 2 AIs in pi1";
+		if (service.getNumberOfActivityInstances(pi2) != 2) return "There should be 2 AIs in pi2";
 
 		// verify individual activity instances
 		uint8 state;
 		( , , , addr, , state) = pi1.getActivityInstanceData(pi1.getActivityInstanceAtIndex(0));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "Activity1 in pi1 should be completed");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity1 in pi1 should be completed";
 		( , , , addr, , state) = pi1.getActivityInstanceData(pi1.getActivityInstanceAtIndex(1));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.SUSPENDED)) return (BaseErrors.INVALID_STATE(), "Activity2 in pi1 should be suspended");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.SUSPENDED)) return "Activity2 in pi1 should be suspended";
 		( , , , addr, , state) = pi2.getActivityInstanceData(pi2.getActivityInstanceAtIndex(0));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "Activity1 in pi2 should be completed");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity1 in pi2 should be completed";
 		( , , , addr, , state) = pi2.getActivityInstanceData(pi2.getActivityInstanceAtIndex(1));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.SUSPENDED)) return (BaseErrors.INVALID_STATE(), "Activity2 in pi2 should be suspended");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.SUSPENDED)) return "Activity2 in pi2 should be suspended";
 
 		// abort both processes, only the second one should succeed
 		pi1.abort(service);
 		pi2.abort(service);
 
-		if (pi1.getState() != uint8(BpmRuntime.ProcessInstanceState.ABORTED)) return (BaseErrors.INVALID_STATE(), "pi1 should be aborted");
-		if (pi2.getState() != uint8(BpmRuntime.ProcessInstanceState.ABORTED)) return (BaseErrors.INVALID_STATE(), "pi2 should be aborted");
+		if (pi1.getState() != uint8(BpmRuntime.ProcessInstanceState.ABORTED)) return "pi1 should be aborted";
+		if (pi2.getState() != uint8(BpmRuntime.ProcessInstanceState.ABORTED)) return "pi2 should be aborted";
 		( , , , addr, , state) = pi1.getActivityInstanceData(pi1.getActivityInstanceAtIndex(0));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "Activity1 in pi1 should still be completed");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity1 in pi1 should still be completed";
 		( , , , addr, , state) = pi1.getActivityInstanceData(pi1.getActivityInstanceAtIndex(1));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.ABORTED)) return (BaseErrors.INVALID_STATE(), "Activity2 in pi1 should now be aborted");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.ABORTED)) return "Activity2 in pi1 should now be aborted";
 		( , , , addr, , state) = pi2.getActivityInstanceData(pi2.getActivityInstanceAtIndex(0));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "Activity1 in pi2 should still be completed");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity1 in pi2 should still be completed";
 		( , , , addr, , state) = pi2.getActivityInstanceData(pi2.getActivityInstanceAtIndex(1));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.ABORTED)) return (BaseErrors.INVALID_STATE(), "Activity2 in pi2 should now be aborted");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.ABORTED)) return "Activity2 in pi2 should now be aborted";
 
-		return (BaseErrors.NO_ERROR(), SUCCESS);
+		return SUCCESS;
 	}
 
 	/**
 	 * Tests a multi-instance user task flow
 	 */
-	function testMultiInstanceUserTask() external returns (uint, string) {
+	function testMultiInstanceUserTask() external returns (string) {
 
 		// re-usable variables for return values
 		uint error;
@@ -1123,84 +1125,84 @@ contract BpmServiceTest {
 		dataStorage.setDataValueAsAddressArray("SIGNATORIES", signatories);
 
 		(error, addr) = repository.createProcessModel("multiInstanceUserTasks", "Multi Instance User Tasks", [1,0,0], modelAuthor, false, EMPTY, EMPTY);
-		if (addr == 0x0) return (BaseErrors.INVALID_STATE(), "Unable to create a ProcessModel");
+		if (addr == 0x0) return "Unable to create a ProcessModel";
 		ProcessModel pm = ProcessModel(addr);
 
 		// Register a participant to be used for USER tasks that replicates the AN behavior
 		pm.addParticipant(participantId1, 0x0, "SIGNATORIES", "agreement", 0x0);
 
 		(error, addr) = pm.createProcessDefinition("MultiInstanceUserTaskProcess");
-		if (addr == 0x0) return (BaseErrors.INVALID_STATE(), "Unable to create a ProcessDefinition");
+		if (addr == 0x0) return "Unable to create a ProcessDefinition";
 		ProcessDefinition pd = ProcessDefinition(addr);
 
 		error = pd.createActivityDefinition(activityId1, BpmModel.ActivityType.TASK, BpmModel.TaskType.USER, BpmModel.TaskBehavior.SENDRECEIVE, participantId1, true, EMPTY, EMPTY, EMPTY);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Error creating USER task activity definition");
+		if (error != BaseErrors.NO_ERROR()) return "Error creating USER task activity definition";
 		error = pd.createActivityDefinition(activityId2, BpmModel.ActivityType.TASK, BpmModel.TaskType.NONE, BpmModel.TaskBehavior.SEND, EMPTY, false, EMPTY, EMPTY, EMPTY);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Error creating NONE task activity definition");
+		if (error != BaseErrors.NO_ERROR()) return "Error creating NONE task activity definition";
 		pd.createTransition(activityId1, activityId2);
 		
 		// Validate to set the start activity and enable runtime configuration
 		(valid, errorMsg) = pd.validate();
-		if (!valid) return (BaseErrors.INVALID_STATE(), bytes32ToString(errorMsg));
+		if (!valid) return errorMsg.toString();
 
 		// Start process instance
 		ProcessInstance pi = service.createDefaultProcessInstance(pd, this, EMPTY);
 		pi.setDataValueAsAddress("agreement", dataStorage);
 		error = service.startProcessInstance(pi);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Unexpected error during process start");
+		if (error != BaseErrors.NO_ERROR()) return "Unexpected error during process start";
 
 		// verify DB state
-		if (service.getNumberOfProcessInstances() != 1) return (BaseErrors.INVALID_STATE(), "There should be 1 PI");
-		if (service.getNumberOfActivityInstances(pi) != 2) return (BaseErrors.INVALID_STATE(), "There should be 2 AIs");
+		if (service.getNumberOfProcessInstances() != 1) return "There should be 1 PI";
+		if (service.getNumberOfActivityInstances(pi) != 2) return "There should be 2 AIs";
 
 		// verify process state
-		if (pi.getState() != uint8(BpmRuntime.ProcessInstanceState.ACTIVE)) return (BaseErrors.INVALID_STATE(), "The PI should be active");
+		if (pi.getState() != uint8(BpmRuntime.ProcessInstanceState.ACTIVE)) return "The PI should be active";
 
 		// verify individual activity instances
 		uint8 state;
 		( , , , addr, , state) = pi.getActivityInstanceData(pi.getActivityInstanceAtIndex(0));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.SUSPENDED)) return (BaseErrors.INVALID_STATE(), "Activity1.1 should be suspended");
-		if (addr != address(proxy1)) return (BaseErrors.INVALID_STATE(), "Activity1.1 should be assigned to proxy1");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.SUSPENDED)) return "Activity1.1 should be suspended";
+		if (addr != address(proxy1)) return "Activity1.1 should be assigned to proxy1";
 		( , , , addr, , state) = pi.getActivityInstanceData(pi.getActivityInstanceAtIndex(1));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.SUSPENDED)) return (BaseErrors.INVALID_STATE(), "Activity1.2 should be suspended");
-		if (addr != address(proxy2)) return (BaseErrors.INVALID_STATE(), "Activity1.2 should be assigned to proxy2");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.SUSPENDED)) return "Activity1.2 should be suspended";
+		if (addr != address(proxy2)) return "Activity1.2 should be assigned to proxy2";
 
 		// complete first user task
 		error = proxy1.completeActivity(pi.getActivityInstanceAtIndex(0), service);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Unexpected error attempting to complete activity1.1 user task via proxy1");
+		if (error != BaseErrors.NO_ERROR()) return "$1";
 		( , , , , , state) = pi.getActivityInstanceData(pi.getActivityInstanceAtIndex(0));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "Activity1.1 should be completed");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity1.1 should be completed";
 
 		// verify process state
-		if (pi.getState() != uint8(BpmRuntime.ProcessInstanceState.ACTIVE)) return (BaseErrors.INVALID_STATE(), "The PI should be completed");
+		if (pi.getState() != uint8(BpmRuntime.ProcessInstanceState.ACTIVE)) return "The PI should be completed";
 
 		// number of AIs should still be 2 at this point
-		if (service.getNumberOfActivityInstances(pi) != 2) return (BaseErrors.INVALID_STATE(), "There should still be 2 AIs after completing only 1 instance");
+		if (service.getNumberOfActivityInstances(pi) != 2) return "$1";
 
 		// complete remaining user task
 		error = proxy2.completeActivity(pi.getActivityInstanceAtIndex(1), service);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Unexpected error attempting to complete activity1.2 user task via proxy2");
+		if (error != BaseErrors.NO_ERROR()) return "$1";
 		( , , , , , state) = pi.getActivityInstanceData(pi.getActivityInstanceAtIndex(1));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "Activity1.2 should be completed");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity1.2 should be completed";
 
-		if (service.getNumberOfActivityInstances(pi) != 3) return (BaseErrors.INVALID_STATE(), "There should be 3 AIs after completing all instances of the multi-instance user task");
+		if (service.getNumberOfActivityInstances(pi) != 3) return "$1";
 
 		// remaining activities should be completed
 		( , , , , , state) = pi.getActivityInstanceData(pi.getActivityInstanceAtIndex(1));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "Activity2 should be completed");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity2 should be completed";
 		( , , , , , state) = pi.getActivityInstanceData(pi.getActivityInstanceAtIndex(2));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "Activity3 should be completed");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity3 should be completed";
 
 		// verify process state
-		if (pi.getState() != uint8(BpmRuntime.ProcessInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "The PI should be completed");
+		if (pi.getState() != uint8(BpmRuntime.ProcessInstanceState.COMPLETED)) return "The PI should be completed";
 
-		return (BaseErrors.NO_ERROR(), SUCCESS);
+		return SUCCESS;
 	}
 
 	/**
 	 * Tests a simple process flow using public BpmService API
 	 */
-	function testSubprocesses() external returns (uint, string) {
+	function testSubprocesses() external returns (string) {
 
 		// re-usable variables for return values
 		uint error;
@@ -1215,26 +1217,26 @@ contract BpmServiceTest {
 
 		// Two process models
 		(error, addr) = repository.createProcessModel("ModelA", "Model A", [1,0,0], modelAuthor, false, EMPTY, EMPTY);
-		if (addr == 0x0) return (BaseErrors.INVALID_STATE(), "Unable to create ProcessModel A");
+		if (addr == 0x0) return "Unable to create ProcessModel A";
 		ProcessModel pmA = ProcessModel(addr);
 		pmA.addParticipant(participantId1, address(this), EMPTY, EMPTY, 0x0);
 
 		(error, addr) = repository.createProcessModel("ModelB", "Model B", [1,0,0], modelAuthor, false, EMPTY, EMPTY);
-		if (addr == 0x0) return (BaseErrors.INVALID_STATE(), "Unable to create ProcessModel B");
+		if (addr == 0x0) return "Unable to create ProcessModel B";
 		ProcessModel pmB = ProcessModel(addr);
 
 		// One 'main' process and three sub-process definitions
 		(error, addr) = pmA.createProcessDefinition("MainProcess");
-		if (addr == 0x0) return (BaseErrors.INVALID_STATE(), "Unable to create MainProcess ProcessDefinition");
+		if (addr == 0x0) return "Unable to create MainProcess ProcessDefinition";
 		ProcessDefinition pdMain = ProcessDefinition(addr);
 		(error, addr) = pmA.createProcessDefinition("SubProcessA");
-		if (addr == 0x0) return (BaseErrors.INVALID_STATE(), "Unable to create SubProcessA ProcessDefinition");
+		if (addr == 0x0) return "Unable to create SubProcessA ProcessDefinition";
 		ProcessDefinition pdSubA = ProcessDefinition(addr);
 		(error, addr) = pmA.createProcessDefinition("SubProcessA2");
-		if (addr == 0x0) return (BaseErrors.INVALID_STATE(), "Unable to create SubProcessA2 ProcessDefinition");
+		if (addr == 0x0) return "$1";
 		ProcessDefinition pdSubA2 = ProcessDefinition(addr);
 		(error, addr) = pmB.createProcessDefinition("SubProcessB");
-		if (addr == 0x0) return (BaseErrors.INVALID_STATE(), "Unable to create SubProcessB ProcessDefinition");
+		if (addr == 0x0) return "Unable to create SubProcessB ProcessDefinition";
 		ProcessDefinition pdSubB = ProcessDefinition(addr);
 
 		// The test covers a "main" process with three subprocess activities. The first two subprocesses have activities that should be suspended.
@@ -1252,80 +1254,63 @@ contract BpmServiceTest {
 
 		// Validate to set the start activity and enable runtime configuration
 		(valid, errorMsg) = pdSubA.validate();
-		if (!valid) return (BaseErrors.INVALID_STATE(), bytes32ToString(errorMsg));
+		if (!valid) return errorMsg.toString();
 		(valid, errorMsg) = pdSubB.validate();
-		if (!valid) return (BaseErrors.INVALID_STATE(), bytes32ToString(errorMsg));
+		if (!valid) return errorMsg.toString();
 		(valid, errorMsg) = pdMain.validate();
-		if (!valid) return (BaseErrors.INVALID_STATE(), bytes32ToString(errorMsg));
+		if (!valid) return errorMsg.toString();
 
 		// Start process instance with data to simulate agreement reference
 		ProcessInstance piMain = service.createDefaultProcessInstance(pdMain, this, EMPTY);
 		piMain.setDataValueAsAddress("agreement", this);
 		error = service.startProcessInstance(piMain);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Unexpected error during process start");
+		if (error != BaseErrors.NO_ERROR()) return "Unexpected error during process start";
 
 		// verify DB state
-		if (service.getBpmServiceDb().getNumberOfProcessInstances() != 3) return (BaseErrors.INVALID_STATE(), "There should be 3 PIs");
-		if (service.getBpmServiceDb().getNumberOfActivityInstances() != 4) return (BaseErrors.INVALID_STATE(), "There should be 4 AIs total");
+		if (service.getBpmServiceDb().getNumberOfProcessInstances() != 3) return "There should be 3 PIs";
+		if (service.getBpmServiceDb().getNumberOfActivityInstances() != 4) return "There should be 4 AIs total";
 		subProcesses[0] = ProcessInstance(service.getProcessInstanceAtIndex(1));
 		subProcesses[1] = ProcessInstance(service.getProcessInstanceAtIndex(2));
 	
 		// all processes should be active after main start
-		if (piMain.getState() != uint8(BpmRuntime.ProcessInstanceState.ACTIVE)) return (BaseErrors.INVALID_STATE(), "The Main PI should be active");
-		if (piMain.getNumberOfActivityInstances() != 2) return (BaseErrors.INVALID_STATE(), "There should be 2 AIs in the main process after start");
-		if (subProcesses[0].getState() != uint8(BpmRuntime.ProcessInstanceState.ACTIVE)) return (BaseErrors.INVALID_STATE(), "SubprocessA should be active");
-		if (subProcesses[1].getState() != uint8(BpmRuntime.ProcessInstanceState.ACTIVE)) return (BaseErrors.INVALID_STATE(), "SubprocessB should be active");
+		if (piMain.getState() != uint8(BpmRuntime.ProcessInstanceState.ACTIVE)) return "The Main PI should be active";
+		if (piMain.getNumberOfActivityInstances() != 2) return "$1";
+		if (subProcesses[0].getState() != uint8(BpmRuntime.ProcessInstanceState.ACTIVE)) return "SubprocessA should be active";
+		if (subProcesses[1].getState() != uint8(BpmRuntime.ProcessInstanceState.ACTIVE)) return "SubprocessB should be active";
 		uint state;
 		( , , , , , state) = piMain.getActivityInstanceData(piMain.getActivityInstanceAtIndex(0));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "Activity1 in Main should be completed");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity1 in Main should be completed";
 		( , , , , , state) = piMain.getActivityInstanceData(piMain.getActivityInstanceAtIndex(1));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.SUSPENDED)) return (BaseErrors.INVALID_STATE(), "Activity2 in Main should be suspended");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.SUSPENDED)) return "Activity2 in Main should be suspended";
 
 		// verify that data was propagated to the subprocess
-		if (subProcesses[0].getDataValueAsAddress("agreement") != address(this)) return (BaseErrors.INVALID_STATE(), "SubprocessA should have the agreement reference set");
-		if (subProcesses[1].getDataValueAsAddress("agreement") != address(this)) return (BaseErrors.INVALID_STATE(), "SubprocessB should have the agreement reference set");
+		if (subProcesses[0].getDataValueAsAddress("agreement") != address(this)) return "$1";
+		if (subProcesses[1].getDataValueAsAddress("agreement") != address(this)) return "$1";
 
 		// completing the SubprocessB activity should trigger completion of the subprocess and creation of the third subprocess
 		error = subProcesses[1].completeActivity(subProcesses[1].getActivityInstanceAtIndex(0), service);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Unexpected error completing the wait activity in SubprocessB");
+		if (error != BaseErrors.NO_ERROR()) return "$1";
 		( , , , , , state) = subProcesses[1].getActivityInstanceData(subProcesses[1].getActivityInstanceAtIndex(0));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "Activity1 in SubprocessB should be completed");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity1 in SubprocessB should be completed";
 		( , , , , , state) = piMain.getActivityInstanceData(piMain.getActivityInstanceAtIndex(1));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "Activity2 in Main should be completed now");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity2 in Main should be completed now";
 		// after completing SubprocessB, the third subprocess A2 is synchronous and has no wait activity, so its completion should complete the main process
-		if (piMain.getNumberOfActivityInstances() != 3) return (BaseErrors.INVALID_STATE(), "There should be 3 AIs in the main process after completing SubprocessB");
-		if (service.getNumberOfProcessInstances() != 4) return (BaseErrors.INVALID_STATE(), "There should be 4 PIs after completing the SubprocessB");
+		if (piMain.getNumberOfActivityInstances() != 3) return "$1";
+		if (service.getNumberOfProcessInstances() != 4) return "$1";
 		( , , , , , state) = piMain.getActivityInstanceData(piMain.getActivityInstanceAtIndex(2));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "Activity3 in Main should be completed");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity3 in Main should be completed";
 		subProcesses[2] = ProcessInstance(service.getProcessInstanceAtIndex(3));
 
 		( , , , , , state) = piMain.getActivityInstanceData(piMain.getActivityInstanceAtIndex(1));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "Activity2 in Main should be completed");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity2 in Main should be completed";
 		( , , , , , state) = piMain.getActivityInstanceData(piMain.getActivityInstanceAtIndex(2));
-		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "Activity2 in Main should be completed");
-		if (subProcesses[0].getState() != uint8(BpmRuntime.ProcessInstanceState.ACTIVE)) return (BaseErrors.INVALID_STATE(), "Aynchronous SubprocessA should still be active");
-		if (subProcesses[1].getState() != uint8(BpmRuntime.ProcessInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "SubprocessB should be completed");		
-		if (subProcesses[2].getState() != uint8(BpmRuntime.ProcessInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "SubprocessA2 should be completed");		
-		if (piMain.getState() != uint8(BpmRuntime.ProcessInstanceState.COMPLETED)) return (BaseErrors.INVALID_STATE(), "The Main PI should be completed");
+		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity2 in Main should be completed";
+		if (subProcesses[0].getState() != uint8(BpmRuntime.ProcessInstanceState.ACTIVE)) return "$1";
+		if (subProcesses[1].getState() != uint8(BpmRuntime.ProcessInstanceState.COMPLETED)) return "SubprocessB should be completed";		
+		if (subProcesses[2].getState() != uint8(BpmRuntime.ProcessInstanceState.COMPLETED)) return "SubprocessA2 should be completed";		
+		if (piMain.getState() != uint8(BpmRuntime.ProcessInstanceState.COMPLETED)) return "The Main PI should be completed";
 
-		return (BaseErrors.NO_ERROR(), SUCCESS);
-	}
-
-	function bytes32ToString(bytes32 x) internal pure returns (string) {
-	    bytes memory bytesString = new bytes(32);
-	    uint charCount = 0;
-	    for (uint j = 0; j < 32; j++) {
-	        byte char = byte(bytes32(uint(x) * 2 ** (8 * j)));
-	        if (char != 0) {
-	            bytesString[charCount] = char;
-	            charCount++;
-	        }
-	    }
-	    bytes memory bytesStringTrimmed = new bytes(charCount);
-	    for (j = 0; j < charCount; j++) {
-	        bytesStringTrimmed[j] = bytesString[j];
-	    }
-	    return string(bytesStringTrimmed);
+		return SUCCESS;
 	}
 
 	function getNewTestBpmService() internal returns (TestBpmService) {

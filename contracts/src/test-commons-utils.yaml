@@ -59,36 +59,20 @@ jobs:
     relation: eq
     val: success
 
-# address -> bytes
-# Commented due to https://github.com/eris-ltd/eris-db/issues/474  
-# - name: testAddressToBytes
-#     call:
-#       destination: $TypeUtilsLibTest
-#       function: testAddressToBytes
-#       data: [$TypeUtilsLibTest]
-# 
-# - name: assertAddressToBytes
-#     assert:
-#       key: $testAddressToBytes
-#       relation: eq
-#       val: $TypeUtilsLibTest
-
 # bytes32 -> string
-# Commented due to https://github.com/eris-ltd/eris-db/issues/474  
-# - name: testBytes32ToString
-#     call:
-#       destination: $TypeUtilsLibTest
-#       function: testBytes32ToString
-#       data: [Rumpelstiltskin]
-# 
-# - name: assertBytes32ToString
-#     assert:
-#       key: $testBytes32ToString
-#       relation: eq
-#       val: Rumpelstiltskin
+- name: testBytes32ToString
+  call:
+    destination: $TypeUtilsLibTest
+    bin: TypeUtilsTest
+    function: testBytes32ToString
+
+- name: assertBytes32ToString
+  assert:
+    key: $testBytes32ToString
+    relation: eq
+    val: success
 
 # string -> bytes32
-# Commented due to https://github.com/eris-ltd/eris-db/issues/474  
 - name: testStringToBytes32
   call:
     destination: $TypeUtilsLibTest
@@ -100,19 +84,6 @@ jobs:
     key: $testStringToBytes32
     relation: eq
     val: success
-
-# Commented due to https://github.com/eris-ltd/eris-db/issues/474  
-# - name: testConcatBytes
-#     call:
-#       destination: $TypeUtilsLibTest
-#       function: testConcatBytes
-#       data: ["Hello ", "World"]
-# 
-# - name: assertConcatBytes
-#     assert:
-#       key: $testConcatBytes
-#       relation: eq
-#       val: "Hello World"
 
 #####
 # ArrayUtils Test

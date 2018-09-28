@@ -34,7 +34,7 @@ contract ActiveAgreementTest {
 	/**
 	 * @dev Covers the setup and proper data retrieval of an agreement
 	 */
-	function testActiveAgreementSetup() external returns (uint, string) {
+	function testActiveAgreementSetup() external returns (string) {
 
 		address result;
 	  ActiveAgreement agreement;
@@ -48,28 +48,28 @@ contract ActiveAgreementTest {
 		agreement = new DefaultActiveAgreement(archetype, agreementName, this, dummyHoardAddress, dummyHoardSecret, dummyEventLogHoardAddress, dummyEventLogHoardSecret, maxNumberOfEvents, false, parties, emptyArray);
 		agreement.setDataValueAsAddressArray(bogusId, bogusArray);
 
-		if (agreement.getName() != agreementName) return (BaseErrors.INVALID_STATE(), "Name not set correctly");
-		if (agreement.getNumberOfParties() != parties.length) return (BaseErrors.INVALID_STATE(), "Number of parties not returning expected size");
+		if (agreement.getName() != agreementName) return "Name not set correctly";
+		if (agreement.getNumberOfParties() != parties.length) return "Number of parties not returning expected size";
 
 		result = agreement.getPartyAtIndex(1);
-		if (result != address(signer2)) return (BaseErrors.INVALID_STATE(), "Address of party at index 1 not as expected");
+		if (result != address(signer2)) return "Address of party at index 1 not as expected";
 
-		if (agreement.getArchetype() != address(archetype)) return (BaseErrors.INVALID_STATE(), "Archetype not set correctly");
+		if (agreement.getArchetype() != address(archetype)) return "Archetype not set correctly";
 
 		// test parties array retrieval via DataStorage (needed for workflow participants)
 		address[100] memory partiesArr = agreement.getDataValueAsAddressArray(DATA_FIELD_AGREEMENT_PARTIES);
 		address[100] memory bogusArr = agreement.getDataValueAsAddressArray(bogusId);
-		if (partiesArr[0] != address(signer1)) return (BaseErrors.INVALID_STATE(), "address[] retrieval via DATA_FIELD_AGREEMENT_PARTIES did not yield first element as expected");
-		if (bogusArr[0] != address(0xCcD5bA65282C3dafB69b19351C7D5B77b9fDDCA6)) return (BaseErrors.INVALID_STATE(), "address[] retrieval via regular ID did not yield first element as expected");
-		if (agreement.getNumberOfArrayEntries(DATA_FIELD_AGREEMENT_PARTIES, false) != agreement.getNumberOfParties()) return (BaseErrors.INVALID_STATE(), "Array size count via DATA_FIELD_AGREEMENT_PARTIES did not match the number of parties");
+		if (partiesArr[0] != address(signer1)) return "$1";
+		if (bogusArr[0] != address(0xCcD5bA65282C3dafB69b19351C7D5B77b9fDDCA6)) return "$1";
+		if (agreement.getNumberOfArrayEntries(DATA_FIELD_AGREEMENT_PARTIES, false) != agreement.getNumberOfParties()) return "$1";
 
-		return (BaseErrors.NO_ERROR(), SUCCESS);
+		return SUCCESS;
 	}
 
 	/**
 	 * @dev Covers testing signing an agreement via users and organizations and the associated state changes.
 	 */
-	function testActiveAgreementSigning() external returns (uint, string) {
+	function testActiveAgreementSigning() external returns (string) {
 
 		uint error;
 	  	ActiveAgreement agreement;
@@ -79,7 +79,7 @@ contract ActiveAgreementTest {
 		// Signer 2 is signing on behalf of an organization
 		address[10] memory emptyAddressArray;
 		DefaultOrganization org1 = new DefaultOrganization(emptyAddressArray);
-		if (!org1.addUser(signer2)) return (error, "Unable to add user account to organization");
+		if (!org1.addUser(signer2)) return "Unable to add user account to organization";
 		delete parties;
 		parties.push(address(signer1));
 		parties.push(address(org1));
@@ -91,38 +91,38 @@ contract ActiveAgreementTest {
 		address signee;
 		uint timestamp;
 		if (address(agreement).call(bytes4(keccak256(abi.encodePacked("sign()")))))
-			return (BaseErrors.INVALID_STATE(), "Signing from test address should REVERT due to invalid actor");
+			return "Signing from test address should REVERT due to invalid actor";
 		(signee, timestamp) = agreement.getSignatureDetails(signer1);
-		if (timestamp != 0) return (BaseErrors.INVALID_STATE(), "Signature timestamp for signer1 should be 0 before signing");
-		if (AgreementsAPI.isFullyExecuted(agreement)) return (BaseErrors.INVALID_STATE(), "AgreementsAPI.isFullyExecuted should be false before signing");
-		if (agreement.getLegalState() == uint8(Agreements.LegalState.EXECUTED)) return (BaseErrors.INVALID_STATE(), "Agreement legal state should NOT be EXECUTED");
+		if (timestamp != 0) return "$1";
+		if (AgreementsAPI.isFullyExecuted(agreement)) return "$1";
+		if (agreement.getLegalState() == uint8(Agreements.LegalState.EXECUTED)) return "Agreement legal state should NOT be EXECUTED";
 
 		// Signing with Signer1 as party
 		signer1.signAgreement(agreement);
-		if (!agreement.isSignedBy(signer1)) return (BaseErrors.INVALID_STATE(), "Agreement should be signed by signer1");
+		if (!agreement.isSignedBy(signer1)) return "Agreement should be signed by signer1";
 		(signee, timestamp) = agreement.getSignatureDetails(signer1);
-		if (signee != address(signer1)) return (BaseErrors.INVALID_STATE(), "Signee for signer1 should be signer1");
-		if (timestamp == 0) return (BaseErrors.INVALID_STATE(), "Signature timestamp for signer1 should be set after signing");
-		if (AgreementsAPI.isFullyExecuted(agreement)) return (BaseErrors.INVALID_STATE(), "AgreementsAPI.isFullyExecuted should be false after signer1");
-		if (agreement.getLegalState() == uint8(Agreements.LegalState.EXECUTED)) return (BaseErrors.INVALID_STATE(), "Agreement legal state should NOT be EXECUTED after signer1");
+		if (signee != address(signer1)) return "Signee for signer1 should be signer1";
+		if (timestamp == 0) return "$1";
+		if (AgreementsAPI.isFullyExecuted(agreement)) return "$1";
+		if (agreement.getLegalState() == uint8(Agreements.LegalState.EXECUTED)) return "$1";
 
 		// Signing with Signer2 via the organization
 		signer2.signAgreement(agreement);
-		if (!agreement.isSignedBy(signer1)) return (BaseErrors.INVALID_STATE(), "Agreement should be signed by signer2");
-		if (agreement.isSignedBy(org1)) return (BaseErrors.INVALID_STATE(), "Agreement should NOT be signed by org1");
+		if (!agreement.isSignedBy(signer1)) return "Agreement should be signed by signer2";
+		if (agreement.isSignedBy(org1)) return "Agreement should NOT be signed by org1";
 		(signee, timestamp) = agreement.getSignatureDetails(org1);
-		if (signee != address(signer2)) return (BaseErrors.INVALID_STATE(), "Signee for org1 should be signer1");
-		if (timestamp == 0) return (BaseErrors.INVALID_STATE(), "Signature timestamp for org1 should be set after signing");
-		if (!AgreementsAPI.isFullyExecuted(agreement)) return (BaseErrors.INVALID_STATE(), "AgreementsAPI.isFullyExecuted should be true after signer2");
-		if (agreement.getLegalState() != uint8(Agreements.LegalState.EXECUTED)) return (BaseErrors.INVALID_STATE(), "Agreement legal state should be EXECUTED after signer2");
+		if (signee != address(signer2)) return "Signee for org1 should be signer1";
+		if (timestamp == 0) return "$1";
+		if (!AgreementsAPI.isFullyExecuted(agreement)) return "$1";
+		if (agreement.getLegalState() != uint8(Agreements.LegalState.EXECUTED)) return "$1";
 
-		return (BaseErrors.NO_ERROR(), SUCCESS);
+		return SUCCESS;
 	}
 
 	/**
 	 * @dev Covers canceling an agreement in different stages
 	 */
-	function testActiveAgreementCancellation() external returns (uint, string) {
+	function testActiveAgreementCancellation() external returns (string) {
 
 		ActiveAgreement agreement1;
 		ActiveAgreement agreement2;
@@ -138,24 +138,24 @@ contract ActiveAgreementTest {
 
 		// test invalid cancellation and states
 		if (address(agreement1).call(bytes4(keccak256(abi.encodePacked("cancel()")))))
-			return (BaseErrors.INVALID_STATE(), "Canceling from test address should REVERT due to invalid actor");
-		if (agreement1.getLegalState() == uint8(Agreements.LegalState.CANCELED)) return (BaseErrors.INVALID_STATE(), "Agreement1 legal state should NOT be CANCELED");
-		if (agreement2.getLegalState() == uint8(Agreements.LegalState.CANCELED)) return (BaseErrors.INVALID_STATE(), "Agreement2 legal state should NOT be CANCELED");
+			return "Canceling from test address should REVERT due to invalid actor";
+		if (agreement1.getLegalState() == uint8(Agreements.LegalState.CANCELED)) return "Agreement1 legal state should NOT be CANCELED";
+		if (agreement2.getLegalState() == uint8(Agreements.LegalState.CANCELED)) return "Agreement2 legal state should NOT be CANCELED";
 
 		// Agreement1 is canceled during formation
 		signer2.cancelAgreement(agreement1);
-		if (agreement1.getLegalState() != uint8(Agreements.LegalState.CANCELED)) return (BaseErrors.INVALID_STATE(), "Agreement1 legal state should be CANCELED after unilateral cancellation in formation");
+		if (agreement1.getLegalState() != uint8(Agreements.LegalState.CANCELED)) return "$1";
 
 		// Agreement2 is canceled during execution
 		signer1.signAgreement(agreement2);
 		signer2.signAgreement(agreement2);
-		if (agreement2.getLegalState() != uint8(Agreements.LegalState.EXECUTED)) return (BaseErrors.INVALID_STATE(), "Agreemen2 legal state should be EXECUTED after parties signed");
+		if (agreement2.getLegalState() != uint8(Agreements.LegalState.EXECUTED)) return "$1";
 		signer1.cancelAgreement(agreement2);
-		if (agreement2.getLegalState() != uint8(Agreements.LegalState.EXECUTED)) return (BaseErrors.INVALID_STATE(), "Agreement2 legal state should still be EXECUTED after unilateral cancellation");
+		if (agreement2.getLegalState() != uint8(Agreements.LegalState.EXECUTED)) return "$1";
 		signer2.cancelAgreement(agreement2);
-		if (agreement2.getLegalState() != uint8(Agreements.LegalState.CANCELED)) return (BaseErrors.INVALID_STATE(), "Agreement2 legal state should still be CANCELED after bilateral cancellation");
+		if (agreement2.getLegalState() != uint8(Agreements.LegalState.CANCELED)) return "$1";
 
-		return (BaseErrors.NO_ERROR(), SUCCESS);
+		return SUCCESS;
 	}
 
 }

@@ -43,9 +43,9 @@ jobs:
 
 - name: assertERC165Test
   assert:
-    key: $testERC165.0
+    key: $testERC165
     relation: eq
-    val: 1
+    val: success
 
 #####
 # IsoCountries Test

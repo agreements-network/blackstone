@@ -16,57 +16,57 @@ contract ProcessModelTest {
 
 	bytes32 EMPTY = "";
 
-	function testProcessModel() external returns (uint, string) {
+	function testProcessModel() external returns (string) {
 		
 		uint error;
 		address newAddress;
 
 		ProcessModel pm = new DefaultProcessModel("testModel", "Test Model", [1,2,3], author, false, "hoardAddress", "hoardSecret");
-		if (pm.getId() != "testModel") return (BaseErrors.INVALID_STATE(), "ProcessModel ID not set correctly");
-		if (pm.getName() != "Test Model") return (BaseErrors.INVALID_STATE(), "ProcessModel Name not set correctly");
-		if (pm.getAuthor() != author) return (BaseErrors.INVALID_STATE(), "ProcessModel Author not set correctly");
-		if (pm.isPrivate() != false) return (BaseErrors.INVALID_STATE(), "ProcessModel expected to be public");
-		if (pm.major() != 1 || pm.minor() != 2 || pm.patch() != 3) return (BaseErrors.INVALID_STATE(), "ProcessModel Version not set correctly");
+		if (pm.getId() != "testModel") return "ProcessModel ID not set correctly";
+		if (pm.getName() != "Test Model") return "ProcessModel Name not set correctly";
+		if (pm.getAuthor() != author) return "ProcessModel Author not set correctly";
+		if (pm.isPrivate() != false) return "ProcessModel expected to be public";
+		if (pm.major() != 1 || pm.minor() != 2 || pm.patch() != 3) return "ProcessModel Version not set correctly";
 		bytes32 location;
 		bytes32 secret;
 		(location, secret) = pm.getDiagram();
-		if (location != "hoardAddress") return (BaseErrors.INVALID_STATE(), "wrong hoard location retrieved");
-		if (secret != "hoardSecret") return (BaseErrors.INVALID_STATE(), "wrong hoard secret retrieved");
+		if (location != "hoardAddress") return "wrong hoard location retrieved";
+		if (secret != "hoardSecret") return "wrong hoard secret retrieved";
 
 		(error, newAddress) = pm.createProcessDefinition("p1");
-		if (error != BaseErrors.NO_ERROR()) return (error, "Unexpected error creating ProcessDefinition p1");
+		if (error != BaseErrors.NO_ERROR()) return "$1";
 		ProcessDefinition pd = ProcessDefinition(newAddress);
 		
-		if (pm.getProcessDefinition("p1") != address(pd)) return (BaseErrors.INVALID_STATE(), "Returned ProcessDefinition address does not match.");
+		if (pm.getProcessDefinition("p1") != address(pd)) return "$1";
 
 		// test process interface handling
 		error = pm.addProcessInterface("AgreementFormation");
-		if (error != BaseErrors.NO_ERROR()) return (error, "Unable to add process interface to model");
+		if (error != BaseErrors.NO_ERROR()) return "Unable to add process interface to model";
 		error = pd.addProcessInterfaceImplementation(0x0, "AgreementFormation");
-		if (error != BaseErrors.NO_ERROR()) return (error, "Unable to add valid process interface to process definition.");
-		if (pm.getNumberOfProcessInterfaces() != 1) return (BaseErrors.INVALID_STATE(), "Wrong number of process interfaces");
+		if (error != BaseErrors.NO_ERROR()) return "$1";
+		if (pm.getNumberOfProcessInterfaces() != 1) return "Wrong number of process interfaces";
 
 		// test participants
 		error = pm.addParticipant(participant1Id, 0x0, EMPTY, EMPTY, 0x0);
-		if (error != BaseErrors.INVALID_PARAM_VALUE()) return (error, "Expected INVALID_PARAM_VALUE setting conditional participant without dataPath");
+		if (error != BaseErrors.INVALID_PARAM_VALUE()) return "$1";
 		error = pm.addParticipant(participant1Id, participant1Address, EMPTY, EMPTY, this);
-		if (error != BaseErrors.INVALID_PARAM_VALUE()) return (error, "Expected INVALID_PARAM_VALUE setting participant and conditional participant dataStorage");
+		if (error != BaseErrors.INVALID_PARAM_VALUE()) return "$1";
 		error = pm.addParticipant(participant1Id, participant1Address, EMPTY, "storageId", 0x0);
-		if (error != BaseErrors.INVALID_PARAM_VALUE()) return (error, "Expected INVALID_PARAM_VALUE setting participant and conditional participant dataStorage ID");
+		if (error != BaseErrors.INVALID_PARAM_VALUE()) return "$1";
 		error = pm.addParticipant(participant1Id, participant1Address, EMPTY, EMPTY, 0x0);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Unexpected error adding valid participant1 to the model");
+		if (error != BaseErrors.NO_ERROR()) return "$1";
 		error = pm.addParticipant(participant1Id, participant1Address, EMPTY, EMPTY, 0x0);
-		if (error != BaseErrors.RESOURCE_ALREADY_EXISTS()) return (error, "Expected RESOURCE_ALREADY_EXISTS adding participant twice");
+		if (error != BaseErrors.RESOURCE_ALREADY_EXISTS()) return "$1";
 
 		error = pm.addParticipant(participant2Id, 0x0, "Buyer", "myDataStore", 0x0);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Unexpected error adding valid participant2 to the model");
+		if (error != BaseErrors.NO_ERROR()) return "$1";
 		if (pm.getConditionalParticipant("Buyer", "", 0x0) != "")
-			return (BaseErrors.INVALID_STATE(), "Retrieving invalid conditional participant Buyer should return nothing");
+			return "$1";
 		if (pm.getConditionalParticipant("", "", 0x0) != "")
-			return (BaseErrors.INVALID_STATE(), "Retrieving empty conditional participant should return nothing");
+			return "Retrieving empty conditional participant should return nothing";
 		if (pm.getConditionalParticipant("Buyer", "myDataStore", 0x0) != participant2Id)
-			return (BaseErrors.INVALID_STATE(), "Retrieving valid conditional participant should return participant2");
+			return "$1";
 
-		return (BaseErrors.NO_ERROR(), "success");
+		return "success";
 	}
 }

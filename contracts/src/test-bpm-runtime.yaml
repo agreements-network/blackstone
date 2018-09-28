@@ -57,9 +57,9 @@ jobs:
 
 - name: assertServiceUpgradeability
   assert:
-    key: $testServiceUpgradeability.0
+    key: $testServiceUpgradeability
     relation: eq
-    val: 1
+    val: success
 
 ##########
 # ApplicationRegistry Tests
@@ -78,9 +78,9 @@ jobs:
 
 - name: assertApplicationRegistry
   assert:
-    key: $testApplicationRegistry.0
+    key: $testApplicationRegistry
     relation: eq
-    val: 1
+    val: success
 
 ##########
 # BPM Tests
@@ -153,7 +153,7 @@ jobs:
   deploy:
     contract: BpmServiceTest.bin
     instance: BpmServiceTest
-    libraries: ErrorsLib:$ErrorsLib, ArrayUtilsAPI:$ArrayUtilsImpl, MappingsLib:$MappingsLib, BpmRuntimeLib:$BpmRuntimeLib, DataStorageUtils:$DataStorageUtils
+    libraries: ErrorsLib:$ErrorsLib, ArrayUtilsAPI:$ArrayUtilsImpl, TypeUtilsAPI:$TypeUtilsImpl, MappingsLib:$MappingsLib, BpmRuntimeLib:$BpmRuntimeLib, DataStorageUtils:$DataStorageUtils
 
 - name: setAppRegistry
   call:
@@ -249,9 +249,9 @@ jobs:
 
 - name: assertInternalProcessExecution
   assert:
-    key: $testInternalProcessExecution.0
+    key: $testInternalProcessExecution
     relation: eq
-    val: 1
+    val: success
 
 - name: testGatewayRouting
   call:
@@ -273,9 +273,9 @@ jobs:
 
 - name: assertSequentialServiceApplications
   assert:
-    key: $testSequentialServiceApplications.0
+    key: $testSequentialServiceApplications
     relation: eq
-    val: 1
+    val: success
 
 - name: testParticipantResolution
   call:
@@ -285,9 +285,9 @@ jobs:
 
 - name: assertParticipantResolution
   assert:
-    key: $testParticipantResolution.0
+    key: $testParticipantResolution
     relation: eq
-    val: 1
+    val: success
 
 - name: testSequentialProcessWithUserTask
   call:
@@ -297,9 +297,9 @@ jobs:
 
 - name: assertSequentialProcessWithUserTask
   assert:
-    key: $testSequentialProcessWithUserTask.0
+    key: $testSequentialProcessWithUserTask
     relation: eq
-    val: 1
+    val: success
 
 - name: testProcessAbort
   call:
@@ -309,9 +309,9 @@ jobs:
 
 - name: assertProcessAbort
   assert:
-    key: $testProcessAbort.0
+    key: $testProcessAbort
     relation: eq
-    val: 1
+    val: success
 
 - name: testMultiInstanceUserTask
   call:
@@ -321,9 +321,9 @@ jobs:
 
 - name: assertMultiInstanceUserTask
   assert:
-    key: $testMultiInstanceUserTask.0
+    key: $testMultiInstanceUserTask
     relation: eq
-    val: 1
+    val: success
 
 ## NOTE: subprocesses currently not yet supported. Tests are failing
 
@@ -335,6 +335,6 @@ jobs:
 
 # - name: assertSubprocesses
 #   assert:
-#     key: $testSubprocesses.0
+#     key: $testSubprocesses
 #     relation: eq
-#     val: 1
+#     val: success
