@@ -48,15 +48,13 @@ contract TypeUtilsTest {
     	return "success";
     }
 
-// Commented due to https://github.com/eris-ltd/eris-db/issues/474	
-//	function testAddressToBytes(address addr) constant returns (bytes) {
-//		return addr.toBytes();
-//	}
-
-// Commented due to https://github.com/eris-ltd/eris-db/issues/474	
-//	function testBytes32ToString(bytes32 _input) constant returns (string) {
-//		return _input.toString();
-//	}
+	function testBytes32ToString() external pure returns (string) {
+		bytes32 input = "Rumpelstiltskin";
+		string memory expectedResult = "Rumpelstiltskin";
+		if (keccak256(abi.encodePacked(input.toString())) != keccak256(abi.encodePacked(expectedResult)))
+			return "The converted input bytes32 should match the expected result string";
+		return "success";
+	}
 
 	function testStringToBytes32() external pure returns (string) {
 		string memory s = "blabla";
@@ -71,9 +69,4 @@ contract TypeUtilsTest {
 		return "success";
 	}
 	
-// Commented due to https://github.com/eris-ltd/eris-db/issues/474	
-//	function testConcatBytes(bytes b1, bytes b2) constant returns (bytes) {
-//		return TypeUtilsAPI.concat(b1, b2);
-//	}
-
 }

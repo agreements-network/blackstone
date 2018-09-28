@@ -28,20 +28,11 @@ library TypeUtilsAPI {
 	function isEmpty(bytes32 _value) public pure returns (bool);
 
     /**
-     * @dev Converts an address to its bytes representation.
-     * @param x the address
-     * @return b the bytes representation
-     */
-     // NOTE: temporarily removed. see (https://github.com/eris-ltd/eris-db/issues/474)
-//    function toBytes(address x) internal constant returns (bytes b);
-
-    /**
      * @dev Converts bytes32 to string
      * @param x bytes32
      * @return the string representation
      */
-     // NOTE: temporarily removed. see (https://github.com/eris-ltd/eris-db/issues/474)
-//    function toString (bytes32 x) constant returns (string);
+    function toString (bytes32 x) public pure returns (string);
     
     /**
      * @dev Converts the given string to bytes32. If the string is longer than
@@ -50,14 +41,5 @@ library TypeUtilsAPI {
      * @return the bytes32 representation
      */
     function toBytes32(string s) public pure returns (bytes32 result);
-
-    /**
-     * @dev Concatenates two bytes parameters into one
-     * @param self the first bytes part
-     * @param bts the second bytes part
-     * @return newBts the concatenation result
-     */
-     // NOTE: temporarily removed. see (https://github.com/eris-ltd/eris-db/issues/474)
-//    function concat(bytes memory self, bytes memory bts) internal constant returns (bytes newBts);
 
 }

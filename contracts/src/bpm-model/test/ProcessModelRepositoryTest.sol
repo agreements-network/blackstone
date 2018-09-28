@@ -17,7 +17,7 @@ contract ProcessModelRepositoryTest {
 	uint error;
 	bytes32 EMPTY = "";
 	
-	function testRepository() external returns (uint, string) {
+	function testRepository() external returns (string) {
 
 		SystemOwned(db).transferSystemOwnership(repo);
 		AbstractDbUpgradeable(repo).acceptDatabase(db);
@@ -27,26 +27,26 @@ contract ProcessModelRepositoryTest {
 		ProcessModel pm3 = new DefaultProcessModel("testModel", "Test Model", [3,0,0], author, false, EMPTY, EMPTY);
 		
 		error = repo.addModel(pm1);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Adding model 1 failed.");
+		if (error != BaseErrors.NO_ERROR()) return "Adding model 1 failed.";
 		
-		if (repo.getModel("testModel") != address(pm1)) return (BaseErrors.INVALID_STATE(), "Version 1.0.0 should be the active one.");
+		if (repo.getModel("testModel") != address(pm1)) return "Version 1.0.0 should be the active one.";
 
 		error = repo.addModel(pm3);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Adding model 3 failed.");
+		if (error != BaseErrors.NO_ERROR()) return "Adding model 3 failed.";
 		
 		error = repo.addModel(pm2);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Adding model 2 failed.");
+		if (error != BaseErrors.NO_ERROR()) return "Adding model 2 failed.";
 
 		error = repo.activateModel(pm2);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Error activating model 2."); 
+		if (error != BaseErrors.NO_ERROR()) return "Error activating model 2."; 
 		
-		if (repo.getModel("testModel") != address(pm2)) return (BaseErrors.INVALID_STATE(), "Version 2.0.0 should be the active one.");
+		if (repo.getModel("testModel") != address(pm2)) return "Version 2.0.0 should be the active one.";
 		
 		error = repo.activateModel(pm3);
-		if (error != BaseErrors.NO_ERROR()) return (error, "Error activating model 3."); 
+		if (error != BaseErrors.NO_ERROR()) return "Error activating model 3."; 
 
-		if (repo.getModel("testModel") != address(pm3)) return (BaseErrors.INVALID_STATE(), "Version 3.0.0 should be the active one.");
+		if (repo.getModel("testModel") != address(pm3)) return "Version 3.0.0 should be the active one.";
 				
-		return (BaseErrors.NO_ERROR(), "success");
+		return "success";
 	}
 }

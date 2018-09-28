@@ -60,7 +60,7 @@ contract ActiveAgreementRegistryTest {
 	ArchetypeRegistry public archRegistry = new DefaultArchetypeRegistry();
 	ArchetypeRegistryDb archRegistryDb = new ArchetypeRegistryDb();
 
-	function testActiveAgreementRegistry() external returns (uint, string) {
+	function testActiveAgreementRegistry() external returns (string) {
 
 	  uint error;
 		address addr;
@@ -74,15 +74,15 @@ contract ActiveAgreementRegistryTest {
 		if (address(agreementRegistry).call(bytes4(keccak256(abi.encodePacked(
 			"createAgreement(address,bytes32,address,bytes32,bytes32,bytes32,bytes32,uint,bool,address[],bytes32,address[])"))), 
 			0x0, agreementName, this, dummyHoardAddress, dummyHoardSecret, dummyEventLogHoardAddress, dummyEventLogHoardSecret, maxNumberOfEvents, false, parties, EMPTY, emptyArray)) {
-				return (BaseErrors.INVALID_STATE(), "Expected error NULL_PARAM_NOT_ALLOWED for empty archetype address");
+				return "$1";
 		}
 
 		activeAgreement = agreementRegistry.createAgreement(archetype, agreementName, this, dummyHoardAddress, dummyHoardSecret, dummyEventLogHoardAddress, dummyEventLogHoardSecret, maxNumberOfEvents, false, parties, EMPTY, emptyArray);
-		if (activeAgreement == 0x0) return (BaseErrors.INVALID_STATE(), "Agreement creation returned empty address");
+		if (activeAgreement == 0x0) return "Agreement creation returned empty address";
 
-		if (agreementRegistry.getActiveAgreementAtIndex(0) != activeAgreement) return (BaseErrors.INVALID_STATE(), "ActiveAgreement at index 0 not as expected");
-		if (agreementRegistry.getPartiesByActiveAgreementSize(activeAgreement) != parties.length) return (BaseErrors.INVALID_STATE(), "Parties size on created agreement not correct");
-		if (agreementRegistry.getPartyByActiveAgreementAtIndex(activeAgreement, 2) != falseAddress) return (BaseErrors.INVALID_STATE(), "Lookup of party at index 2 on created agreement not correct");
+		if (agreementRegistry.getActiveAgreementAtIndex(0) != activeAgreement) return "ActiveAgreement at index 0 not as expected";
+		if (agreementRegistry.getPartiesByActiveAgreementSize(activeAgreement) != parties.length) return "Parties size on created agreement not correct";
+		if (agreementRegistry.getPartyByActiveAgreementAtIndex(activeAgreement, 2) != falseAddress) return "$1";
 
 		// test external data retrieval
 		address retArchetype;
@@ -93,22 +93,22 @@ contract ActiveAgreementRegistryTest {
 		bool retIsPrivate;
 		(retArchetype, retName, retCreator, retHoardAddress, retHoardSecret, , , , retIsPrivate, , , ) = agreementRegistry.getActiveAgreementData(activeAgreement);
 		
-		if (retArchetype != address(archetype)) return (BaseErrors.INVALID_STATE(), "getActiveAgreementData returned wrong archetype");
-		if (retName != agreementName) return (BaseErrors.INVALID_STATE(), "getActiveAgreementData returned wrong name");
-		if (retCreator != address(this)) return (BaseErrors.INVALID_STATE(), "getActiveAgreementData returned wrong creator");
-		if (retHoardAddress != dummyHoardAddress) return (BaseErrors.INVALID_STATE(), "getActiveAgreementData returned wrong hoard address");
-		if (retHoardSecret != dummyHoardSecret) return (BaseErrors.INVALID_STATE(), "getActiveAgreementData returned wrong hoard secret");
-		if (retIsPrivate != false) return (BaseErrors.INVALID_STATE(), "getActiveAgreementData returned wrong isPrivate");
+		if (retArchetype != address(archetype)) return "$1";
+		if (retName != agreementName) return "getActiveAgreementData returned wrong name";
+		if (retCreator != address(this)) return "getActiveAgreementData returned wrong creator";
+		if (retHoardAddress != dummyHoardAddress) return "$1";
+		if (retHoardSecret != dummyHoardSecret) return "$1";
+		if (retIsPrivate != false) return "$1";
 
 		// test external party data retrieval
 		uint timestamp;
 		(addr, timestamp) = agreementRegistry.getPartyByActiveAgreementData(activeAgreement, falseAddress);
-		if (timestamp != 0) return (BaseErrors.INVALID_STATE(), "Party data signature timestamp for false address expected to be 0");
+		if (timestamp != 0) return "$1";
 
-		return (BaseErrors.NO_ERROR(), SUCCESS);
+		return SUCCESS;
 	}
 
-	function testAgreementCollections() external returns (uint, string) {
+	function testAgreementCollections() external returns (string) {
 
 		uint error;
 
@@ -123,66 +123,66 @@ contract ActiveAgreementRegistryTest {
 		agreementRegistry.setArchetypeRegistry(archRegistry);
 
 		archetypeAddr = archRegistry.createArchetype("archetype name", falseAddress, "description", 10, false, true, falseAddress, falseAddress, EMPTY, emptyArray);
-		if (archetypeAddr == 0x0) return (BaseErrors.INVALID_STATE(), "Archetype creation returned empty address");
+		if (archetypeAddr == 0x0) return "Archetype creation returned empty address";
 
 		activeAgreement = agreementRegistry.createAgreement(archetypeAddr, agreementName, this, dummyHoardAddress, dummyHoardSecret, dummyEventLogHoardAddress, dummyEventLogHoardSecret, maxNumberOfEvents, false, parties, EMPTY, emptyArray);
-		if (activeAgreement == 0x0) return (BaseErrors.INVALID_STATE(), "Agreement creation returned empty address");
+		if (activeAgreement == 0x0) return "Agreement creation returned empty address";
 
 		if (address(agreementRegistry).call(bytes4(keccak256(abi.encodePacked("addAgreementToCollection(bytes32,address)"))), fakeCollectionId, activeAgreement)) {
-			return (BaseErrors.INVALID_STATE(), "Expected RESOURCE_NOT_FOUND for non-existent collection id");
+			return "Expected RESOURCE_NOT_FOUND for non-existent collection id";
 		}
 
 		(error, leaseCollectionId) = agreementRegistry.createAgreementCollection(leaseCollection, 0x0, uint8(Agreements.CollectionType.MATTER), fakePackageId);
-		if (error != BaseErrors.NULL_PARAM_NOT_ALLOWED()) return (BaseErrors.INVALID_STATE(), "Expected failure due to no author address");
+		if (error != BaseErrors.NULL_PARAM_NOT_ALLOWED()) return "Expected failure due to no author address";
 		
 		(error, leaseCollectionId) = agreementRegistry.createAgreementCollection(leaseCollection, falseAddress, uint8(Agreements.CollectionType.MATTER), EMPTY);
-		if (error != BaseErrors.NULL_PARAM_NOT_ALLOWED()) return (BaseErrors.INVALID_STATE(), "Expected failure due to no archetype package id");
+		if (error != BaseErrors.NULL_PARAM_NOT_ALLOWED()) return "$1";
 
 		(error, leaseCollectionId) = agreementRegistry.createAgreementCollection(leaseCollection, falseAddress, uint8(Agreements.CollectionType.MATTER), fakePackageId);
-		if (error != BaseErrors.NO_ERROR()) return (BaseErrors.INVALID_STATE(), "It should create a new collection");
-		if (leaseCollectionId == "") return (BaseErrors.INVALID_STATE(), "Collection id should not be empty");
+		if (error != BaseErrors.NO_ERROR()) return "It should create a new collection";
+		if (leaseCollectionId == "") return "Collection id should not be empty";
 
 		(error, leaseCollectionId) = agreementRegistry.createAgreementCollection(leaseCollection, falseAddress, uint8(Agreements.CollectionType.MATTER), fakePackageId);
-		if (error != BaseErrors.RESOURCE_ALREADY_EXISTS()) return (BaseErrors.INVALID_STATE(), "Expected failure when creating collection with duplicate name/author");
+		if (error != BaseErrors.RESOURCE_ALREADY_EXISTS()) return "$1";
 
 		if (address(agreementRegistry).call(bytes4(keccak256(abi.encodePacked("addAgreementToCollection(bytes32,address)"))), leaseCollectionId, activeAgreement)) {
-			return (BaseErrors.INVALID_STATE(), "Expected INVALID_ACTION for collection referencing a package which does not contain the agreement's archetype");
+			return "$1";
 		}
 
 		// creating a real package that contains the archetype for this agreement
 		(error, realPackageId) = archRegistry.createArchetypePackage(packageName, packageDesc, falseAddress, false, true);
-		if (error != BaseErrors.NO_ERROR()) return (BaseErrors.INVALID_STATE(), "Failed to create archetype package via agreementRegistry");
-		if (realPackageId == "") return (BaseErrors.INVALID_STATE(), "Archetype package creation had no error, but package id is empty");
+		if (error != BaseErrors.NO_ERROR()) return "$1";
+		if (realPackageId == "") return "$1";
 
 		if (!address(archRegistry).call(bytes4(keccak256(abi.encodePacked("addArchetypeToPackage(bytes32,address)"))), realPackageId, archetypeAddr)) {
-			return (BaseErrors.INVALID_STATE(), "Failed to add archetype to package");
+			return "Failed to add archetype to package";
 		}
 
 		// creating a new collection that references the new package
 		(error, leaseCollectionId2) = agreementRegistry.createAgreementCollection(leaseCollection2, falseAddress, uint8(Agreements.CollectionType.MATTER), realPackageId);
-		if (error != BaseErrors.NO_ERROR()) return (BaseErrors.INVALID_STATE(), "It should create a new collection referecing the real package");
-		if (leaseCollectionId2 == "") return (BaseErrors.INVALID_STATE(), "Collection id referenceing the real package should not be empty");
+		if (error != BaseErrors.NO_ERROR()) return "$1";
+		if (leaseCollectionId2 == "") return "$1";
 
 		if (!address(agreementRegistry).call(bytes4(keccak256(abi.encodePacked("addAgreementToCollection(bytes32,address)"))), leaseCollectionId2, activeAgreement)) {
-			return (BaseErrors.INVALID_STATE(), "Expected to successfully add agreement to collection referencing a package that contains the agreement's archetype");
+			return "$1";
 		}
 
-		if (agreementRegistry.getNumberOfAgreementsInCollection(leaseCollectionId2) != 1) return (BaseErrors.INVALID_STATE(), "Lease collection 2 should have 1 agreement");
-		if (agreementRegistry.getAgreementAtIndexInCollection(leaseCollectionId2, 0) != activeAgreement) return (BaseErrors.INVALID_STATE(), "Agreement at index 0 of lease collection 2 should match activeAgreement");
+		if (agreementRegistry.getNumberOfAgreementsInCollection(leaseCollectionId2) != 1) return "Lease collection 2 should have 1 agreement";
+		if (agreementRegistry.getAgreementAtIndexInCollection(leaseCollectionId2, 0) != activeAgreement) return "$1";
 		
 		(error, buildingCollectionId) = agreementRegistry.createAgreementCollection(buildingCollection, falseAddress, uint8(Agreements.CollectionType.MATTER), fakePackageId);
-		if (error != BaseErrors.NO_ERROR()) return (BaseErrors.INVALID_STATE(), "It should create a new building collection");
-		if (buildingCollectionId == "") return (BaseErrors.INVALID_STATE(), "Building Collection id should not be empty");
+		if (error != BaseErrors.NO_ERROR()) return "It should create a new building collection";
+		if (buildingCollectionId == "") return "Building Collection id should not be empty";
 
-		if (agreementRegistry.getNumberOfAgreementCollections() != 3) return (BaseErrors.INVALID_STATE(), "Registry should have 3 collections");
+		if (agreementRegistry.getNumberOfAgreementCollections() != 3) return "Registry should have 3 collections";
 
 		activeAgreement2 = agreementRegistry.createAgreement(archetypeAddr, agreementName, this, dummyHoardAddress, dummyHoardSecret, dummyEventLogHoardAddress, dummyEventLogHoardSecret, maxNumberOfEvents, false, parties, leaseCollectionId2, emptyArray);
-		if (activeAgreement2 == 0x0) return (BaseErrors.INVALID_STATE(), "Failed to create a second agreement to put into lease collection 2");
+		if (activeAgreement2 == 0x0) return "$1";
 
-		if (agreementRegistry.getNumberOfAgreementsInCollection(leaseCollectionId2) != 2) return (BaseErrors.INVALID_STATE(), "Lease collection 2 should now have 2 agreements");
-		if (agreementRegistry.getAgreementAtIndexInCollection(leaseCollectionId2, 1) != activeAgreement2) return (BaseErrors.INVALID_STATE(), "Agreement at index 1 should match activeAgreement2");
+		if (agreementRegistry.getNumberOfAgreementsInCollection(leaseCollectionId2) != 2) return "$1";
+		if (agreementRegistry.getAgreementAtIndexInCollection(leaseCollectionId2, 1) != activeAgreement2) return "$1";
 
-		return (BaseErrors.NO_ERROR(), SUCCESS);
+		return SUCCESS;
 	}
 
 	function testGoverningAgreements() external returns (string) {

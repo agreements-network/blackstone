@@ -102,9 +102,9 @@ jobs:
 
 - name: assertProcessModelRepository
   assert:
-    key: $testProcessModelRepository.0
+    key: $testProcessModelRepository
     relation: eq
-    val: 1
+    val: success
 
 - name: ProcessModelTest
   deploy:
@@ -120,9 +120,9 @@ jobs:
 
 - name: assertProcessModel
   assert:
-    key: $testProcessModel.0
+    key: $testProcessModel
     relation: eq
-    val: 1
+    val: success
 
 - name: ProcessDefinitionTest
   deploy:
@@ -138,9 +138,9 @@ jobs:
 
 - name: assertProcessDefinition
   assert:
-    key: $testProcessDefinition.0
+    key: $testProcessDefinition
     relation: eq
-    val: 1
+    val: success
 
 - name: testTransitionConditionResolution
   call:

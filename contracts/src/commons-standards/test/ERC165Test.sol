@@ -9,23 +9,23 @@ contract ERC165Test {
 
     bytes4 interfaceMyContract = bytes4(keccak256(abi.encodePacked("someFunction()"))) ^ bytes4(keccak256(abi.encodePacked("someOtherFunction(address)")));
 
-    function testERC165() external returns (uint, string) {
+    function testERC165() external returns (string) {
 
         address myImplAddress = new MyContract();
 
         // fail
         if (myImplAddress.call(bytes4(keccak256(abi.encodePacked("addIllegalSupport()")))))
-            return (BaseErrors.INVALID_STATE(), "Custom contract should throw when adding illegal 0xffffffff interface");
+            return "$1";
         if (ERC165Utils.implementsInterface(myImplAddress, bytes4(keccak256(abi.encodePacked("unknownFunction(bytes32)")))) == true)
-            return (BaseErrors.INVALID_STATE(), "Custom contract should not support an unknown interface");
+            return "$1";
 
         // success
         if (ERC165Utils.implementsInterface(myImplAddress, 0x01ffc9a7) == false)
-            return (BaseErrors.INVALID_STATE(), "Custom contract should support the ERC165 interface");
+            return "Custom contract should support the ERC165 interface";
         if (ERC165Utils.implementsInterface(myImplAddress, interfaceMyContract) == false)
-            return (BaseErrors.INVALID_STATE(), "Custom contract should support the custom interface");
+            return "Custom contract should support the custom interface";
 
-        return (BaseErrors.NO_ERROR(), "success");
+        return "success";
     }
 
 }

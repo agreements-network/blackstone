@@ -23,7 +23,7 @@ contract ApplicationRegistryTest {
 
     bytes4 customCompletionFunction = bytes4(keccak256(abi.encodePacked("customComplete(address,bytes32,address)")));
 
-    function testApplicationRegistry() external returns (uint, string) {
+    function testApplicationRegistry() external returns (string) {
 
         uint error;
 
@@ -37,29 +37,29 @@ contract ApplicationRegistryTest {
 
         // add applications
         error = registry.addApplication(serviceApp1Id, BpmModel.ApplicationType.SERVICE, app1, bytes4(EMPTY), EMPTY);
-        if (error != BaseErrors.NO_ERROR()) return (error, "Unexpected error adding application1 to the registry");
+        if (error != BaseErrors.NO_ERROR()) return "$1";
         error = registry.addApplication(serviceApp1Id, BpmModel.ApplicationType.SERVICE, app1, bytes4(EMPTY), EMPTY);
-        if (error != BaseErrors.RESOURCE_ALREADY_EXISTS()) return (BaseErrors.INVALID_STATE(), "Expected RESOURCE_ALREADY_EXISTS for adding an already existing application1");
+        if (error != BaseErrors.RESOURCE_ALREADY_EXISTS()) return "$1";
         error = registry.addApplication(serviceApp2Id, BpmModel.ApplicationType.SERVICE, app2, customCompletionFunction, EMPTY);
-        if (error != BaseErrors.NO_ERROR()) return (error, "Unexpected error adding an application2 to the registry");
+        if (error != BaseErrors.NO_ERROR()) return "$1";
 
-        if (registry.getNumberOfApplications() != 2) return (BaseErrors.INVALID_STATE(), "There should be 2 applications registered");
+        if (registry.getNumberOfApplications() != 2) return "There should be 2 applications registered";
 
         error = registry.addAccessPoint(serviceApp1Id, app1AccessPoint1, DataTypes.BYTES32(), BpmModel.Direction.IN);
-        if (error != BaseErrors.NO_ERROR()) return (error, "Unexpected error adding access point app1InData to ServiceApp1");
+        if (error != BaseErrors.NO_ERROR()) return "$1";
         error = registry.addAccessPoint(serviceApp1Id, app1AccessPoint2, DataTypes.STRING(), BpmModel.Direction.OUT);
-        if (error != BaseErrors.NO_ERROR()) return (error, "Unexpected error adding access point app1OutData to ServiceApp1");
+        if (error != BaseErrors.NO_ERROR()) return "$1";
         error = registry.addAccessPoint(serviceApp1Id, app1AccessPoint1, DataTypes.UINT(), BpmModel.Direction.IN);
-        if (error != BaseErrors.RESOURCE_ALREADY_EXISTS()) return (BaseErrors.INVALID_STATE(), "Expected error when trying to add duplicate access point");
+        if (error != BaseErrors.RESOURCE_ALREADY_EXISTS()) return "$1";
         
-        if (registry.getNumberOfAccessPoints(serviceApp1Id) != 2) return (BaseErrors.INVALID_STATE(), "Wrong access point count for ServiceApp1");
+        if (registry.getNumberOfAccessPoints(serviceApp1Id) != 2) return "Wrong access point count for ServiceApp1";
 
         uint8 dataType;
         BpmModel.Direction direction;
 
         (dataType, direction) = registry.getAccessPointData(serviceApp1Id, app1AccessPoint1);
-        if (dataType != DataTypes.BYTES32()) return (BaseErrors.INVALID_STATE(), "Expected bytes32 dataType for access point app1AccessPoint1");
-        if (direction != BpmModel.Direction.IN) return (BaseErrors.INVALID_STATE(), "Expected direction IN for access point app1AccessPoint1");
+        if (dataType != DataTypes.BYTES32()) return "$1";
+        if (direction != BpmModel.Direction.IN) return "$1";
 
         uint8 myType;
         address location;
@@ -68,20 +68,20 @@ contract ApplicationRegistryTest {
         uint accessPointCount;
 
         (myType, location, method, webForm, accessPointCount) = registry.getApplicationData(serviceApp1Id);
-        if (myType != uint8(BpmModel.ApplicationType.SERVICE)) return (BaseErrors.INVALID_STATE(), "app1 wrong applicationType");
-        if (location != address(app1)) return (BaseErrors.INVALID_STATE(), "app1 wrong location");
-        if (method != bytes4(EMPTY)) return (BaseErrors.INVALID_STATE(), "app1 wrong completion function");
-        if (webForm != "") return (BaseErrors.INVALID_STATE(), "app1 wrong webForm");
-        if (accessPointCount != 2) return (BaseErrors.INVALID_STATE(), "app1 wrong accessPointCount");
+        if (myType != uint8(BpmModel.ApplicationType.SERVICE)) return "app1 wrong applicationType";
+        if (location != address(app1)) return "app1 wrong location";
+        if (method != bytes4(EMPTY)) return "app1 wrong completion function";
+        if (webForm != "") return "app1 wrong webForm";
+        if (accessPointCount != 2) return "app1 wrong accessPointCount";
 
         (myType, location, method, webForm, accessPointCount) = registry.getApplicationData(serviceApp2Id);
-        if (myType != uint8(BpmModel.ApplicationType.SERVICE)) return (BaseErrors.INVALID_STATE(), "app2 wrong applicationType");
-        if (location != address(app2)) return (BaseErrors.INVALID_STATE(), "app2 wrong location");
-        if (method != customCompletionFunction) return (BaseErrors.INVALID_STATE(), "app2 wrong completion function");
-        if (webForm != "") return (BaseErrors.INVALID_STATE(), "app2 wrong webForm");
-        if (accessPointCount != 0) return (BaseErrors.INVALID_STATE(), "app1 wrong accessPointCount");
+        if (myType != uint8(BpmModel.ApplicationType.SERVICE)) return "app2 wrong applicationType";
+        if (location != address(app2)) return "app2 wrong location";
+        if (method != customCompletionFunction) return "app2 wrong completion function";
+        if (webForm != "") return "app2 wrong webForm";
+        if (accessPointCount != 0) return "app1 wrong accessPointCount";
 
-        return (BaseErrors.NO_ERROR(), SUCCESS);
+        return SUCCESS;
     }
     
 }
