@@ -5,7 +5,7 @@ pragma solidity ^0.4.23;
  * @dev Interface to be implemented by contracts to support the capability of 'migrating' their state to
  * a successor contract.
  */
-interface Migratable {
+contract Migratable {
 
     /**
      * @dev Performs the PULL migration of state from the specified predecessor to this contract.
