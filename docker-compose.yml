@@ -28,10 +28,8 @@ services:
     - ./api/sqlsol:/config
     depends_on:
     - postgres
-    - chain
     links:
     - postgres
-    - chain
   chain:
     image: quay.io/monax/build:latest
     environment:
@@ -43,13 +41,16 @@ services:
     - .:/app
     ports:
     - "3080:3080"
+    - "9222:9222"
     expose:
     - "10997"
     working_dir: /app
     depends_on:
     - postgres
     - hoard
+    - vent
     links:
     - postgres
     - hoard
+    - vent
     command: "test/test_api.sh --runAPI"
