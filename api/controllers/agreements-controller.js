@@ -3,8 +3,8 @@ const boom = require('boom');
 const Joi = require('joi');
 const Analytics = require('analytics-node');
 const _ = require('lodash');
-const pgCache = require('./postgres-cache-helper');
-
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const {
   encrypt,
   decrypt,
@@ -15,8 +15,7 @@ const {
   getBooleanFromString,
 } = require(`${global.__common}/controller-dependencies`);
 const pool = require(`${global.__common}/postgres-db`);
-const crypto = require('crypto');
-const bcrypt = require('bcryptjs');
+const pgCache = require('./postgres-cache-helper');
 const contracts = require('./contracts-controller');
 const dataStorage = require(path.join(global.__controllers, 'data-storage-controller'));
 const archetypeSchema = require(`${global.__schemas}/archetype`);
@@ -523,9 +522,41 @@ const getAgreements = asyncMiddleware(async (req, res) => {
   const retData = [];
   const forCurrentUser = req.query.forCurrentUser === 'true';
   delete req.query.forCurrentUser;
+  let { tags: queryTags } = req.query;
+  delete req.query.tags;
   const queryParams = Object.keys(req.query).length ? req.query : null;
   const data = await sqlCache.getAgreements(queryParams, forCurrentUser, req.user.address);
-  data.forEach((elem) => { retData.push(format('Agreement', elem)); });
+  // get addresses of organizations the user is an approver of
+  const orgs = await sqlCache.getManagedOrganizationsOfUser(req.user.address);
+  const ownerAddresses = orgs.map(({ organization }) => organization).concat([req.user.address]);
+  // find all agreements that have tags with the given text applied that belong to the authenticated user or their organizations
+  let text = `SELECT agreement_address AS agreement, tags.id AS id, text, owner_address AS owner FROM taggings 
+  JOIN tags ON taggings.tag_id = tags.id 
+  WHERE owner_address IN (${ownerAddresses.map((owner, i) => `$${i + 1}`)})`;
+  let values = ownerAddresses;
+  if (queryTags) {
+    if (typeof queryTags === 'string') queryTags = [queryTags]; // `queryTags` is a string if only a single tag is received
+    // add filter for text specified in queryTags
+    text = text.concat(` AND LOWER(text) IN (${queryTags.map((tag, i) => `LOWER($${i + 1 + ownerAddresses.length})`)});`);
+    values = values.concat(queryTags);
+  }
+  const { rows: tags } = await pool.query({ text, values });
+  // group tag details by agreement
+  const tagsByAgreement = {};
+  tags.forEach(({
+    agreement, id, text: tagText, owner,
+  }) => {
+    tagsByAgreement[agreement] = tagsByAgreement[agreement] || [];
+    tagsByAgreement[agreement].push({ id, text: tagText, owner });
+  });
+  data.forEach((elem) => {
+    // filter sqlsol agreement by tag results
+    if (queryTags && !tagsByAgreement[elem.address]) return;
+    // format agreement obj and add tag details
+    const formatted = format('Agreement', elem);
+    formatted.tags = tagsByAgreement[formatted.address] || [];
+    retData.push(formatted);
+  });
   return res.json(retData);
 });
 
@@ -547,6 +578,17 @@ const getAgreement = asyncMiddleware(async (req, res) => {
   retData.governingAgreements = governingAgreements.map(agreement => format('Agreement', agreement));
   delete retData.hoardAddress;
   delete retData.hoardSecret;
+  // find tags for the agreement that belong to the user or their organizations
+  const orgs = await sqlCache.getManagedOrganizationsOfUser(req.user.address);
+  const ownerAddresses = orgs.map(({ organization }) => organization).concat([req.user.address]);
+  const { rows: tags } = await pool.query({
+    text: `SELECT tags.id AS id, text, owner_address AS owner FROM taggings 
+    JOIN tags ON taggings.tag_id = tags.id 
+    WHERE agreement_address = $1 
+    AND owner_address IN (${ownerAddresses.map((owner, i) => `$${i + 2}`)});`,
+    values: [req.params.address].concat(ownerAddresses),
+  });
+  retData.tags = tags;
   return res.status(200).json(retData);
 });
 
@@ -656,6 +698,137 @@ const addAgreementToCollection = asyncMiddleware(async (req, res) => {
   res.sendStatus(200);
 });
 
+const createTags = asyncMiddleware(async (req, res) => {
+  const { tags, owner } = req.body;
+  // Check format of request body
+  if (!tags || !tags.length) {
+    throw boom.badRequest('Tags are required');
+  } else if (!Array.isArray(tags)) {
+    throw boom.badRequest('Tags must be array');
+  } else {
+    const badTags = tags.filter(tag => typeof tag !== 'string' || !tag.length || tag.length > 40).length;
+    if (badTags.length) {
+      throw boom.badRequest(`Tags must be strings with length 1 to 40. The following tags require changes: ${badTags.join(', ')}`);
+    }
+  }
+  let ownerAddress = req.user.address;
+  if (owner) {
+    // Check if user is authorized to create tags under given owner
+    const orgs = await sqlCache.getManagedOrganizationsOfUser(req.user.address);
+    const authorized = orgs.find(({ organization }) => organization === owner);
+    if (!authorized) throw boom.forbidden(`Authenticated user is not authorized to create tags for organization ${owner}`);
+    ownerAddress = owner;
+  }
+  try {
+    // Create tags and get tag details for inserted tags
+    await pool.query({
+      text: `INSERT INTO tags(owner_address, text) VALUES ${tags.map((tag, i) => `(UPPER($1), $${i + 2})`)}
+      ON CONFLICT (UPPER(owner_address), LOWER(text)) DO NOTHING;`,
+      values: [ownerAddress].concat(tags),
+    });
+    // Get tag details to return
+    const { rows } = await pool.query({
+      text: `SELECT id, text, owner_address AS owner FROM tags
+      WHERE owner_address = $1 AND LOWER(text) IN (${tags.map((tag, i) => `LOWER($${i + 2})`)})`,
+      values: [ownerAddress].concat(tags),
+    });
+    res.status(200).send(rows);
+  } catch (err) {
+    throw boom.badImplementation(err);
+  }
+});
+
+const addTagsToAgreement = asyncMiddleware(async (req, res) => {
+  const { tagIds } = req.body;
+  // Check format of request body
+  if (!tagIds || !tagIds.length) {
+    throw boom.badRequest('TagIds required');
+  } else if (tagIds && !Array.isArray(tagIds)) {
+    throw boom.badRequest('TagIds must be an array');
+  }
+  let badArr = tagIds.filter(tagId => typeof tagId !== 'number');
+  if (badArr.length) {
+    throw boom.badRequest(`TagIds must be numbers. The following tagIds are invalid: ${JSON.stringify(badArr)}`);
+  }
+  // Check that user is authorized to manage tags for given agreement
+  let authorized = await sqlCache.userIsAuthorOrPartyOfAgreement(req.user.address, req.params.address);
+  if (!authorized) throw boom.forbidden(`User is not authorized to apply tags to agreement ${req.params.address}`);
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    // Get tag details
+    const { rows } = await client.query({
+      text: `SELECT UPPER(owner_address) AS owner, id, text FROM tags WHERE id IN (${tagIds.map((tag, i) => `$${i + 1}`)})`,
+      values: tagIds,
+    });
+    // Check that the given tags exist
+    badArr = tagIds.filter(givenId => !rows.find(({ id }) => id === givenId));
+    if (badArr.length) {
+      throw boom.badData(`Tag ids ${JSON.stringify(badArr)} not found`);
+    }
+    // Check that the user is authorized to manage the given tags
+    badArr = rows.filter(({ owner }) => owner !== req.user.address.toUpperCase());
+    if (badArr.length) {
+      const orgs = await sqlCache.getManagedOrganizationsOfUser(req.user.address);
+      authorized = badArr.every(({ owner }) => orgs.find(({ organization }) => organization === owner));
+      if (!authorized) throw boom.forbidden('User is not authorized to apply one or more of the specified tagIds');
+    }
+    // Finally apply tags
+    await client.query({
+      text: `INSERT INTO taggings(agreement_address, tag_id) VALUES ${rows.map((row, i) => `(UPPER($1), $${i + 2})`)}
+      ON CONFLICT (UPPER(agreement_address), tag_id) DO NOTHING;`,
+      values: [req.params.address].concat(rows.map(({ id }) => id)),
+    });
+    await client.query('COMMIT');
+    client.release();
+    res.status(200).send();
+  } catch (err) {
+    await client.query('ROLLBACK');
+    client.release();
+    if (boom.isBoom(err)) throw err;
+    throw boom.badImplementation(err);
+  }
+});
+
+const removeTagFromAgreement = asyncMiddleware(async (req, res) => {
+  const { address, id } = req.params;
+  // Check that user is authorized to manage tags for given agreement
+  let authorized = await sqlCache.userIsAuthorOrPartyOfAgreement(req.user.address, address);
+  if (!authorized) throw boom.forbidden(`User is not authorized to remove tags from agreement ${address}`);
+  const client = await pool.connect();
+  try {
+    // Get tag details
+    const { rows } = await client.query({
+      text: 'SELECT UPPER(owner_address) AS owner, id, text FROM tags WHERE id = $1;',
+      values: [id],
+    });
+    const tag = rows[0];
+    if (!tag) {
+      throw boom.notFound(`Tag ${id} not found`);
+    }
+    // Check that the user is authorized to manage the given tag
+    if (tag.owner !== req.user.address) {
+      const orgs = await sqlCache.getManagedOrganizationsOfUser(req.user.address);
+      authorized = orgs.find(({ organization }) => organization === tag.owner);
+      if (!authorized) throw boom.forbidden(`User is not authorized to manage tag ${id}`);
+    }
+    // Delete tagging
+    await client.query({
+      text: 'DELETE FROM taggings WHERE agreement_address = $1 AND tag_id = $2;',
+      values: [address, id],
+    });
+    await client.query('COMMIT');
+    client.release();
+    return res.status(200).send();
+  } catch (err) {
+    await client.query('ROLLBACK');
+    client.release();
+    if (boom.isBoom(err)) throw err;
+    throw boom.badImplementation(err);
+  }
+});
+
 module.exports = {
   getArchetypes,
   getArchetype,
@@ -685,4 +858,7 @@ module.exports = {
   updateAgreementEventLog,
   signAgreement,
   cancelAgreement,
+  createTags,
+  addTagsToAgreement,
+  removeTagFromAgreement,
 };

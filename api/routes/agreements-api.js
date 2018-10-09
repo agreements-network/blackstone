@@ -22,6 +22,9 @@ const {
   getAgreementCollections,
   getAgreementCollection,
   addAgreementToCollection,
+  createTags,
+  addTagsToAgreement,
+  removeTagFromAgreement,
 } = require(`${global.__controllers}/agreements-controller`);
 
 const { ensureAuth } = require(`${global.__common}/middleware`);
@@ -507,6 +510,7 @@ module.exports = (app) => {
  *     curl -i /agreements
  *
  * @apiParam {Boolean} [forCurrentUser]  Optional query string parameter to get all agreements pertaining to the currently logged in user
+ * @apiParam {String} [tags]  Optional query string parameter to filter agreements by tags. Looks only at tags owned by the authenticated user or one of their organizations.
  * @apiSuccess {String} address Active Agreement's address
  * @apiSuccess {String} name Human readable name of the Active Agreement
  * @apiSuccess {String} archetype Address of the parent Archetype of the Active Agreement
@@ -530,7 +534,19 @@ module.exports = (app) => {
          "legalState": 1,
          "formationProcessInstance": "038725D6437A809D536B9417047EC74E7FF4D1C0",
          "executionProcessInstance": "0000000000000000000000000000000000000000",
-         "numberOfParties": 2
+         "numberOfParties": 2,
+         "tags": [
+          {
+            "id": 1,
+            "text": "NDA",
+            "owner": "AB3399395E9CAB5434022D1992D31BB3ACC2E3F1"
+          },
+          {
+            "id": 19,
+            "text": "Admin",
+            "owner": "DAE988ADED111E6AE82DBFD9AE4FFFE97ADBC23D"
+          }
+         ]
        }]
   *
   * @apiUse NotLoggedIn
@@ -626,6 +642,18 @@ module.exports = (app) => {
         "address": "B3AEAD4717EFF80BDDF5E22110521029A8460FFB",
         "name": "Governing Agreement",
         "isPrivate": false
+      }
+    ],
+    "tags": [
+      {
+        "id": 1,
+        "text": "NDA",
+        "owner": "AB3399395E9CAB5434022D1992D31BB3ACC2E3F1"
+      },
+      {
+        "id": 19,
+        "text": "Admin",
+        "owner": "DAE988ADED111E6AE82DBFD9AE4FFFE97ADBC23D"
       }
     ]
   }
@@ -866,4 +894,72 @@ module.exports = (app) => {
  * @apiUse AuthTokenRequired
  */
   app.put('/agreement-collections', ensureAuth, addAgreementToCollection);
+
+  /**
+ * @api {post} /agreement-tags Create tags that can be applied to agreements
+ * @apiName AddAgreementTags
+ * @apiGroup Agreements
+ * @apiDescription Creates tags that can be applied to agreements.
+ * Checks for uniqueness of given tag text under scope of owner and ignores duplicates.
+ * Returns details for only the newly created tags.
+ *
+ * @apiExample {curl} Simple:
+ *     curl -iX POST /agreement-tags
+ *
+ * @apiBodyParameter {String[]} tags Text for the tags (Max length of 40 characters per tag)
+ * @apiBodyParameter {String} owner **(Optional)** Organization address to be recorded as the tag owner.
+ * If not specified, the address of the authenticated user will be used.
+ * @apiSuccessExample {json} Success Array
+  [
+    {
+      "id": 4,
+      "text": "NDA",
+      "owner": "AB3399395E9CAB5434022D1992D31BB3ACC2E3F1"
+    },
+    {
+      "id": 5,
+      "text": "Admin",
+      "owner": "AB3399395E9CAB5434022D1992D31BB3ACC2E3F1"
+    }
+  ]
+ * @apiUse NotLoggedIn
+ * @apiUse AuthTokenRequired
+ */
+  app.post('/agreement-tags', ensureAuth, createTags);
+
+  /**
+ * @api {put} /agreements/:address/tags Apply tags to an agreement
+ * @apiName ApplyTagsToAgreement
+ * @apiGroup Agreements
+ * @apiDescription Applies the specified tags to the agreement.
+ * Requires the authenticated user to be the author of or party to the specified agreement.
+ * Requires the authenticated user to be the owner of all specified tags, or if the owner is an organization, an approver of the organization.
+ * Returns 403 if either of these criteria are not met.
+ *
+ * @apiExample {curl} Simple:
+ *     curl -iX PUT /agreements/E615D0EC4BB0EDDE615D0EC4BB0EB3D909F66890/tags
+ *
+ * @apiBodyParameter {String[]} tagIds IDs of existing tags to be applied to the agreement.
+ *
+ * @apiUse NotLoggedIn
+ * @apiUse AuthTokenRequired
+ */
+  app.put('/agreements/:address/tags', ensureAuth, addTagsToAgreement);
+
+  /**
+ * @api {delete} /agreements/:address/tags/:id Remove tag from an agreement
+ * @apiName RemoveTagFromAgreement
+ * @apiGroup Agreements
+ * @apiDescription Removes the specified tag from the agreement.
+ * Requires the authenticated user to be the author or party of the specified agreement.
+ * Requires the authenticated user to be the owner of specified tag, or if the owner is an organization, an approver of the organization.
+ * Returns 403 if either of these criteria are not met.
+ *
+ * @apiExample {curl} Simple:
+ *     curl -iX DELETE /agreements/E615D0EC4BB0EDDE615D0EC4BB0EB3D909F66890/tags/4
+ *
+ * @apiUse NotLoggedIn
+ * @apiUse AuthTokenRequired
+ */
+  app.delete('/agreements/:address/tags/:id', ensureAuth, removeTagFromAgreement);
 };

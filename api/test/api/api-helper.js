@@ -302,6 +302,20 @@ module.exports = (server) => {
           });
       });
     },
+
+    getAgreements: (token, query = '') => {
+      return new Promise((resolve, reject) => {
+        chai
+          .request(server)
+          .get(`/agreements${query}`)
+          .set('Cookie', [`access_token=${token}`])
+          .end((err, res) => {
+            if (err) return reject(err);
+            if (res.status !== 200) return reject(new Error('getting agreements NOT OK'));
+            return resolve(res.body);
+          });
+      });
+    },
   
     getTasksForUser: (token) => {
       return new Promise((resolve, reject) => {
@@ -437,6 +451,65 @@ module.exports = (server) => {
       let xml = fs.readFileSync(path.resolve(modelPath), 'utf8');
       xml = _.replace(xml, new RegExp('###MODEL_ID###', 'g'), modelId);
       return xml;
-    }
+    },
+
+    createTags: (tags, owner, token) => {
+      return new Promise((resolve, reject) => {
+        chai
+          .request(server)
+          .post(`/agreement-tags`)
+          .send({ tags, owner })
+          .set('Cookie', [`access_token=${token}`])
+          .end((err, res) => {
+            if (err) return reject(err);
+            if (res.status !== 200) return reject(new Error('create tags NOT OK'));
+            return resolve(res.body);
+          });
+      });
+    },
+
+    applyTags: (tagIds, agreement, token) => {
+      return new Promise((resolve, reject) => {
+        chai
+          .request(server)
+          .put(`/agreements/${agreement}/tags`)
+          .send({ tagIds })
+          .set('Cookie', [`access_token=${token}`])
+          .end((err, res) => {
+            if (err) return reject(err);
+            if (res.status !== 200) return reject(new Error('apply tags NOT OK'));
+            return resolve();
+          });
+      });
+    },
+
+    removeTag: (tagId, agreement, token) => {
+      return new Promise((resolve, reject) => {
+        chai
+          .request(server)
+          .delete(`/agreements/${agreement}/tags/${tagId}`)
+          .set('Cookie', [`access_token=${token}`])
+          .end((err, res) => {
+            if (err) return reject(err);
+            if (res.status !== 200) return reject(new Error('remove tag NOT OK'));
+            return resolve();
+          });
+      });
+    },
+
+    createOrganization: (organization, token) => {
+      return new Promise((resolve, reject) => {
+        chai
+          .request(server)
+          .post(`/organizations`)
+          .send(organization)
+          .set('Cookie', [`access_token=${token}`])
+          .end((err, res) => {
+            if (err) return reject(err);
+            if (res.status !== 200) return reject(new Error('create organization NOT OK'));
+            return resolve(res);
+          });
+      });
+    },
   }
 }
