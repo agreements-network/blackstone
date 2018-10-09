@@ -550,6 +550,28 @@ const getProcessModelData = address => new Promise((resolve, reject) => {
   });
 });
 
+const getManagedOrganizationsOfUser = userAddress => new Promise((resolve, reject) => {
+  const queryString = 'SELECT organization FROM organization_approvers WHERE approverAddress = ?;';
+  contracts.cache.db.all(queryString, userAddress, (err, data) => {
+    if (err) return reject(boom.badImplementation(`Failed to get managed organizations for user: ${err}`));
+    return resolve(data);
+  });
+});
+
+const userIsAuthorOrPartyOfAgreement = (userAddress, agreementAddress) => new Promise((resolve, reject) => {
+  const queryString = `SELECT a.address FROM agreements a
+    LEFT JOIN agreements_to_parties ap ON a.address = ap.address
+    WHERE (ap.partyByAgreement = ? AND ap.address = ?)
+    OR (a.creator = ? AND a.address = ?);`;
+  contracts.cache.db.get(queryString, userAddress, agreementAddress, userAddress, agreementAddress, (err, data) => {
+    if (err) return reject(boom.badImplementation(`Failed to authorize user for given agreement: ${err}`));
+    if (!data) {
+      return resolve(false);
+    }
+    return resolve(true);
+  });
+});
+
 module.exports = {
   getOrganizations,
   getOrganization,
@@ -589,4 +611,6 @@ module.exports = {
   getProcessDefinitions,
   getProcessDefinitionData,
   getProcessModelData,
+  userIsAuthorOrPartyOfAgreement,
+  getManagedOrganizationsOfUser,
 };
