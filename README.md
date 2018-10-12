@@ -405,3 +405,4 @@ deploys the AN contracts, and leaves the contracts and chain intact. Afterwards:
 cd api
 npm run test
 ```
+

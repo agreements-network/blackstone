@@ -234,7 +234,11 @@ const registerUser = asyncMiddleware(async ({ body }, res) => {
   await pool.query({ text: queryString, values: [address, id, email, hash, isProducer] });
   analytics.identify({
     userId: id,
-    traits: { userContract: address },
+    traits: {
+      username: username,
+      email: email,
+      userContract: address,
+    },
   });
   analytics.track({
     event: 'Signed up',
