@@ -581,13 +581,7 @@ const getAgreement = asyncMiddleware(async (req, res) => {
   // find tags for the agreement that belong to the user or their organizations
   const orgs = await sqlCache.getManagedOrganizationsOfUser(req.user.address);
   const ownerAddresses = orgs.map(({ organization }) => organization).concat([req.user.address]);
-  const { rows: tags } = await pool.query({
-    text: `SELECT tags.id AS id, text, owner_address AS owner FROM taggings 
-    JOIN tags ON taggings.tag_id = tags.id 
-    WHERE agreement_address = $1 
-    AND owner_address IN (${ownerAddresses.map((owner, i) => `$${i + 2}`)});`,
-    values: [req.params.address].concat(ownerAddresses),
-  });
+  const tags = await sqlCache.getAgreementTags(req.params.address, ownerAddresses);
   retData.tags = tags;
   return res.status(200).json(retData);
 });
@@ -698,6 +692,30 @@ const addAgreementToCollection = asyncMiddleware(async (req, res) => {
   res.sendStatus(200);
 });
 
+const getTags = asyncMiddleware(async (req, res) => {
+  const user = req.user.address;
+  let owners;
+  let organizations = await sqlCache.getManagedOrganizationsOfUser(user);
+  organizations = organizations.map(({ organization }) => organization);
+  let { owners: queryOwners } = req.query;
+  if (queryOwners) {
+    queryOwners = typeof queryOwners === 'string' ? [queryOwners] : queryOwners;
+    owners = queryOwners.map(addr => addr.toUpperCase());
+    const forbiddenOrgs = owners.filter(addr => addr !== user && !organizations.includes(addr));
+    if (forbiddenOrgs.length) {
+      throw boom.forbidden(`User is not authorized to read tags for organizations ${forbiddenOrgs.join(', ')}`);
+    }
+  } else {
+    owners = [user, ...organizations];
+  }
+  try {
+    const tags = await sqlCache.getUserTags(owners);
+    return res.status(200).json({ tags });
+  } catch (err) {
+    throw boom.badImplementation(err);
+  }
+});
+
 const createTags = asyncMiddleware(async (req, res) => {
   const { tags, owner } = req.body;
   // Check format of request body
@@ -721,19 +739,61 @@ const createTags = asyncMiddleware(async (req, res) => {
   }
   try {
     // Create tags and get tag details for inserted tags
-    await pool.query({
-      text: `INSERT INTO tags(owner_address, text) VALUES ${tags.map((tag, i) => `(UPPER($1), $${i + 2})`)}
-      ON CONFLICT (UPPER(owner_address), LOWER(text)) DO NOTHING;`,
-      values: [ownerAddress].concat(tags),
-    });
-    // Get tag details to return
-    const { rows } = await pool.query({
-      text: `SELECT id, text, owner_address AS owner FROM tags
-      WHERE owner_address = $1 AND LOWER(text) IN (${tags.map((tag, i) => `LOWER($${i + 2})`)})`,
-      values: [ownerAddress].concat(tags),
-    });
-    res.status(200).send(rows);
+    const data = await sqlCache.createTags(ownerAddress, tags);
+    res.status(200).send(data);
   } catch (err) {
+    if (boom.isBoom(err)) throw err;
+    throw boom.badImplementation(err);
+  }
+});
+
+const updateTag = asyncMiddleware(async (req, res) => {
+  const { params: { id }, user: { address: user }, body: { text } } = req;
+  if (!text) throw boom.badRequest('Text for tag is required');
+  try {
+    const tag = await sqlCache.getTag(id);
+    if (!tag) {
+      throw boom.notFound(`Tag ${id} not found`);
+    }
+    let authorized;
+    if (tag.owner !== user) {
+      const organizations = await sqlCache.getManagedOrganizationsOfUser(user);
+      if (organizations.find(({ organization }) => organization === tag.owner)) {
+        authorized = true;
+      }
+    } else {
+      authorized = true;
+    }
+    if (!authorized) throw boom.forbidden(`User is not authorized to update tag ${id}`);
+    await sqlCache.updateTag(id, text);
+    return res.status(200).send();
+  } catch (err) {
+    if (boom.isBoom(err)) throw err;
+    throw boom.badImplementation(err);
+  }
+});
+
+const deleteTag = asyncMiddleware(async (req, res) => {
+  const { params: { id }, user: { address: user } } = req;
+  try {
+    const tag = await sqlCache.getTag(id);
+    if (!tag) {
+      throw boom.notFound(`Tag ${id} not found`);
+    }
+    let authorized;
+    if (tag.owner !== user) {
+      const organizations = await sqlCache.getManagedOrganizationsOfUser(user);
+      if (organizations.find(({ organization }) => organization === tag.owner)) {
+        authorized = true;
+      }
+    } else {
+      authorized = true;
+    }
+    if (!authorized) throw boom.forbidden(`User is not authorized to delete tag ${id}`);
+    await sqlCache.deleteTag(id);
+    return res.status(200).send();
+  } catch (err) {
+    if (boom.isBoom(err)) throw err;
     throw boom.badImplementation(err);
   }
 });
@@ -754,38 +814,25 @@ const addTagsToAgreement = asyncMiddleware(async (req, res) => {
   let authorized = await sqlCache.userIsAuthorOrPartyOfAgreement(req.user.address, req.params.address);
   if (!authorized) throw boom.forbidden(`User is not authorized to apply tags to agreement ${req.params.address}`);
 
-  const client = await pool.connect();
   try {
-    await client.query('BEGIN');
     // Get tag details
-    const { rows } = await client.query({
-      text: `SELECT UPPER(owner_address) AS owner, id, text FROM tags WHERE id IN (${tagIds.map((tag, i) => `$${i + 1}`)})`,
-      values: tagIds,
-    });
+    const data = await sqlCache.getTagsById(tagIds);
     // Check that the given tags exist
-    badArr = tagIds.filter(givenId => !rows.find(({ id }) => id === givenId));
+    badArr = tagIds.filter(givenId => !data.find(({ id }) => id === givenId));
     if (badArr.length) {
       throw boom.badData(`Tag ids ${JSON.stringify(badArr)} not found`);
     }
     // Check that the user is authorized to manage the given tags
-    badArr = rows.filter(({ owner }) => owner !== req.user.address.toUpperCase());
+    badArr = data.filter(({ owner }) => owner !== req.user.address.toUpperCase());
     if (badArr.length) {
       const orgs = await sqlCache.getManagedOrganizationsOfUser(req.user.address);
       authorized = badArr.every(({ owner }) => orgs.find(({ organization }) => organization === owner));
       if (!authorized) throw boom.forbidden('User is not authorized to apply one or more of the specified tagIds');
     }
     // Finally apply tags
-    await client.query({
-      text: `INSERT INTO taggings(agreement_address, tag_id) VALUES ${rows.map((row, i) => `(UPPER($1), $${i + 2})`)}
-      ON CONFLICT (UPPER(agreement_address), tag_id) DO NOTHING;`,
-      values: [req.params.address].concat(rows.map(({ id }) => id)),
-    });
-    await client.query('COMMIT');
-    client.release();
+    await sqlCache.applyTags(req.params.address, tagIds);
     res.status(200).send();
   } catch (err) {
-    await client.query('ROLLBACK');
-    client.release();
     if (boom.isBoom(err)) throw err;
     throw boom.badImplementation(err);
   }
@@ -796,14 +843,9 @@ const removeTagFromAgreement = asyncMiddleware(async (req, res) => {
   // Check that user is authorized to manage tags for given agreement
   let authorized = await sqlCache.userIsAuthorOrPartyOfAgreement(req.user.address, address);
   if (!authorized) throw boom.forbidden(`User is not authorized to remove tags from agreement ${address}`);
-  const client = await pool.connect();
   try {
     // Get tag details
-    const { rows } = await client.query({
-      text: 'SELECT UPPER(owner_address) AS owner, id, text FROM tags WHERE id = $1;',
-      values: [id],
-    });
-    const tag = rows[0];
+    const tag = await sqlCache.getTag(id);
     if (!tag) {
       throw boom.notFound(`Tag ${id} not found`);
     }
@@ -814,16 +856,9 @@ const removeTagFromAgreement = asyncMiddleware(async (req, res) => {
       if (!authorized) throw boom.forbidden(`User is not authorized to manage tag ${id}`);
     }
     // Delete tagging
-    await client.query({
-      text: 'DELETE FROM taggings WHERE agreement_address = $1 AND tag_id = $2;',
-      values: [address, id],
-    });
-    await client.query('COMMIT');
-    client.release();
+    await sqlCache.removeTag(address, id);
     return res.status(200).send();
   } catch (err) {
-    await client.query('ROLLBACK');
-    client.release();
     if (boom.isBoom(err)) throw err;
     throw boom.badImplementation(err);
   }
@@ -858,7 +893,10 @@ module.exports = {
   updateAgreementEventLog,
   signAgreement,
   cancelAgreement,
+  getTags,
   createTags,
+  updateTag,
+  deleteTag,
   addTagsToAgreement,
   removeTagFromAgreement,
 };

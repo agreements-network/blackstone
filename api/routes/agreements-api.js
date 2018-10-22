@@ -22,7 +22,10 @@ const {
   getAgreementCollections,
   getAgreementCollection,
   addAgreementToCollection,
+  getTags,
   createTags,
+  updateTag,
+  deleteTag,
   addTagsToAgreement,
   removeTagFromAgreement,
 } = require(`${global.__controllers}/agreements-controller`);
@@ -896,6 +899,35 @@ module.exports = (app) => {
   app.put('/agreement-collections', ensureAuth, addAgreementToCollection);
 
   /**
+ * @api {get} /agreement-tags Get tags belonging to the authenticated user and the organizations they are an approver of
+ * @apiName GetAgreementTags
+ * @apiGroup Agreements
+ * @apiDescription Read tags
+ *
+ * @apiExample {curl} Simple:
+ *     curl -iX GET /agreement-tags
+ *
+ * @apiParam {String} [owners] Optional query string parameter to filter tags by owner.
+ * Allowed values include the addresses of any organizations the authenticated user is an approver of, and the authenticated user's address.
+ * @apiSuccessExample {json} Success Array
+  [
+    {
+      "id": 4,
+      "text": "NDA",
+      "owner": "AB3399395E9CAB5434022D1992D31BB3ACC2E3F1"
+    },
+    {
+      "id": 5,
+      "text": "Admin",
+      "owner": "AB3399395E9CAB5434022D1992D31BB3ACC2E3F1"
+    }
+  ]
+ * @apiUse NotLoggedIn
+ * @apiUse AuthTokenRequired
+ */
+  app.get('/agreement-tags', ensureAuth, getTags);
+
+  /**
  * @api {post} /agreement-tags Create tags that can be applied to agreements
  * @apiName AddAgreementTags
  * @apiGroup Agreements
@@ -926,6 +958,35 @@ module.exports = (app) => {
  * @apiUse AuthTokenRequired
  */
   app.post('/agreement-tags', ensureAuth, createTags);
+
+  /**
+ * @api {put} /agreement-tags/:id Update tag
+ * @apiName UpdateAgreementTag
+ * @apiGroup Agreements
+ * @apiDescription Update tag.
+ * @apiSuccess {String} text Tag name
+ *
+ * @apiExample {curl} Simple:
+ *     curl -iX PUT /agreement-tags/:id
+ *
+ * @apiUse NotLoggedIn
+ * @apiUse AuthTokenRequired
+ */
+  app.put('/agreement-tags/:id', ensureAuth, updateTag);
+
+  /**
+ * @api {delete} /agreement-tags/:id Delete tag
+ * @apiName DeleteAgreementTag
+ * @apiGroup Agreements
+ * @apiDescription Delete tag.
+ *
+ * @apiExample {curl} Simple:
+ *     curl -iX DELETE /agreement-tags/:id
+ *
+ * @apiUse NotLoggedIn
+ * @apiUse AuthTokenRequired
+ */
+  app.delete('/agreement-tags/:id', ensureAuth, deleteTag);
 
   /**
  * @api {put} /agreements/:address/tags Apply tags to an agreement

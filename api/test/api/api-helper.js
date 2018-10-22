@@ -468,6 +468,20 @@ module.exports = (server) => {
       });
     },
 
+    getTags: (token, query = '') => {
+      return new Promise((resolve, reject) => {
+        chai
+          .request(server)
+          .get(`/agreement-tags${query}`)
+          .set('Cookie', [`access_token=${token}`])
+          .end((err, res) => {
+            if (err) return reject(err);
+            if (res.status !== 200) return reject(new Error('get tags NOT OK'));
+            return resolve(res.body);
+          });
+      });
+    },
+
     applyTags: (tagIds, agreement, token) => {
       return new Promise((resolve, reject) => {
         chai
@@ -492,6 +506,35 @@ module.exports = (server) => {
           .end((err, res) => {
             if (err) return reject(err);
             if (res.status !== 200) return reject(new Error('remove tag NOT OK'));
+            return resolve();
+          });
+      });
+    },
+
+    deleteTag: (tagId, token) => {
+      return new Promise((resolve, reject) => {
+        chai
+          .request(server)
+          .delete(`/agreement-tags/${tagId}`)
+          .set('Cookie', [`access_token=${token}`])
+          .end((err, res) => {
+            if (err) return reject(err);
+            if (res.status !== 200) return reject(new Error('delete tag NOT OK'));
+            return resolve();
+          });
+      });
+    },
+
+    updateTag: (tagId, tag, token) => {
+      return new Promise((resolve, reject) => {
+        chai
+          .request(server)
+          .put(`/agreement-tags/${tagId}`)
+          .send(tag)
+          .set('Cookie', [`access_token=${token}`])
+          .end((err, res) => {
+            if (err) return reject(err);
+            if (res.status !== 200) return reject(new Error('delete tag NOT OK'));
             return resolve();
           });
       });

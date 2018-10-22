@@ -7,6 +7,7 @@ const {
   rightPad,
   getNamesOfOrganizations,
 } = require(`${global.__common}/controller-dependencies`);
+const pool = require(`${global.__common}/postgres-db`);
 const { DEFAULT_DEPARTMENT_ID } = global.__monax_constants;
 
 const getOrganizations = queryParams => new Promise((resolve, reject) => {
@@ -572,6 +573,132 @@ const userIsAuthorOrPartyOfAgreement = (userAddress, agreementAddress) => new Pr
   });
 });
 
+const getAgreementTags = (agreementAddress, ownerAddresses) => new Promise((resolve, reject) => {
+  pool.query({
+    text: `SELECT tags.id AS id, text, owner_address AS owner FROM taggings 
+    JOIN tags ON taggings.tag_id = tags.id 
+    WHERE agreement_address = $1 
+    AND owner_address IN (${ownerAddresses.map((owner, i) => `$${i + 2}`)});`,
+    values: [agreementAddress].concat(ownerAddresses),
+  }, (err, data) => {
+    if (err) {
+      return reject(boom.badImplementation(err));
+    }
+    return resolve(data.rows);
+  });
+});
+
+const getUserTags = ownerAddresses => new Promise((resolve, reject) => {
+  pool.query({
+    text: `SELECT id, text, owner_address AS owner FROM tags WHERE owner_address IN (${ownerAddresses.map((owner, i) => `$${i + 1}`)})`,
+    values: ownerAddresses,
+  }, (err, data) => {
+    if (err) {
+      return reject(boom.badImplementation(err));
+    }
+    return resolve(data.rows);
+  });
+});
+
+const createTags = (ownerAddress, tags) => new Promise((resolve, reject) => {
+  pool.query({
+    text: `INSERT INTO tags(owner_address, text) VALUES ${tags.map((tag, i) => `(UPPER($1), $${i + 2})`)}
+    ON CONFLICT (UPPER(owner_address), LOWER(text)) DO NOTHING;`,
+    values: [ownerAddress].concat(tags),
+  }, (insertErr) => {
+    if (insertErr) {
+      return reject(boom.badImplementation(insertErr));
+    }
+    return pool.query({
+      text: `SELECT id, text, owner_address AS owner FROM tags
+      WHERE owner_address = $1 AND LOWER(text) IN (${tags.map((tag, i) => `LOWER($${i + 2})`)})`,
+      values: [ownerAddress].concat(tags),
+    }, (selectErr, data) => {
+      if (selectErr) {
+        return reject(boom.badImplementation(selectErr));
+      }
+      return resolve(data.rows);
+    });
+  });
+});
+
+const getTag = id => new Promise((resolve, reject) => {
+  pool.query({
+    text: 'SELECT id, text, UPPER(owner_address) AS owner FROM tags WHERE id = $1;',
+    values: [id],
+  }, (err, data) => {
+    if (err) {
+      return reject(boom.badImplementation(err));
+    }
+    return resolve(data.rows[0]);
+  });
+});
+
+const updateTag = (id, text) => new Promise((resolve, reject) => {
+  pool.query({
+    text: 'UPDATE tags SET text = $1 WHERE id = $2;',
+    values: [text, id],
+  }, (err) => {
+    if (err) {
+      if (err.code === '23505') {
+        // Violates unique constraint
+        return reject(boom.badData(err));
+      }
+      return reject(boom.badImplementation(err));
+    }
+    return resolve();
+  });
+});
+
+const deleteTag = id => new Promise((resolve, reject) => {
+  pool.query({
+    text: 'DELETE FROM tags WHERE id = $1;',
+    values: [id],
+  }, (err) => {
+    if (err) {
+      return reject(boom.badImplementation(err));
+    }
+    return resolve();
+  });
+});
+
+const getTagsById = tagIds => new Promise((resolve, reject) => {
+  pool.query({
+    text: `SELECT UPPER(owner_address) AS owner, id, text FROM tags WHERE id IN (${tagIds.map((tag, i) => `$${i + 1}`)})`,
+    values: tagIds,
+  }, (err, data) => {
+    if (err) {
+      return reject(boom.badImplementation(err));
+    }
+    return resolve(data.rows);
+  });
+});
+
+const applyTags = (agreementAddress, tagIds) => new Promise((resolve, reject) => {
+  pool.query({
+    text: `INSERT INTO taggings(agreement_address, tag_id) VALUES ${tagIds.map((row, i) => `(UPPER($1), $${i + 2})`)}
+    ON CONFLICT (UPPER(agreement_address), tag_id) DO NOTHING;`,
+    values: [agreementAddress].concat(tagIds),
+  }, (err) => {
+    if (err) {
+      return reject(boom.badImplementation(err));
+    }
+    return resolve();
+  });
+});
+
+const removeTag = (agreementAddress, id) => new Promise((resolve, reject) => {
+  pool.query({
+    text: 'DELETE FROM taggings WHERE UPPER(agreement_address) = UPPER($1) AND tag_id = $2;',
+    values: [agreementAddress, id],
+  }, (err) => {
+    if (err) {
+      return reject(boom.badImplementation(err));
+    }
+    return resolve();
+  });
+});
+
 module.exports = {
   getOrganizations,
   getOrganization,
@@ -613,4 +740,13 @@ module.exports = {
   getProcessModelData,
   userIsAuthorOrPartyOfAgreement,
   getManagedOrganizationsOfUser,
+  getAgreementTags,
+  getUserTags,
+  createTags,
+  getTag,
+  updateTag,
+  deleteTag,
+  getTagsById,
+  applyTags,
+  removeTag,
 };
