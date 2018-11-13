@@ -3,11 +3,12 @@ ValidatorAddress = "0201EF325305ABD75E1FB8A8F539730F71547484"
 [GenesisDoc]
   GenesisTime = 2018-07-24T13:48:52Z
   ChainName = "BurrowChain_1267BB"
+  [GenesisDoc.Params]
+    ProposalThreshold = 3
   [GenesisDoc.GlobalPermissions]
-    Roles = []
     [GenesisDoc.GlobalPermissions.Base]
-      Perms = 2302
-      SetBit = 16383
+      Perms = "send | call | createContract | createAccount | bond | name | proposal | input | batch | hasBase | hasRole"
+      SetBit = "root | send | call | createContract | createAccount | bond | name | proposal | input | batch | hasBase | setBase | unsetBase | setGlobal | hasRole | addRole | removeRole"
 
   [[GenesisDoc.Accounts]]
     Address = "0201EF325305ABD75E1FB8A8F539730F71547484"
@@ -16,8 +17,8 @@ ValidatorAddress = "0201EF325305ABD75E1FB8A8F539730F71547484"
     Name = "Full_0"
     [GenesisDoc.Accounts.Permissions]
       [GenesisDoc.Accounts.Permissions.Base]
-        Perms = 16383
-        SetBit = 16383
+          Perms = "root | send | call | createContract | createAccount | bond | name | proposal | input | batch | hasBase | setBase | unsetBase | setGlobal | hasRole | addRole | removeRole"
+          SetBit = "root | send | call | createContract | createAccount | bond | name | proposal | input | batch | hasBase | setBase | unsetBase | setGlobal | hasRole | addRole | removeRole"
 
   [[GenesisDoc.Accounts]]
     Address = "F390C8CA854874472CAD38C0135F78097BCB632D"
@@ -26,8 +27,8 @@ ValidatorAddress = "0201EF325305ABD75E1FB8A8F539730F71547484"
     Name = "billings"
     [GenesisDoc.Accounts.Permissions]
       [GenesisDoc.Accounts.Permissions.Base]
-        Perms = 16383
-        SetBit = 16383
+        Perms = "root | send | call | createContract | createAccount | bond | name | proposal | input | batch | hasBase | setBase | unsetBase | setGlobal | hasRole | addRole | removeRole"
+        SetBit = "root | send | call | createContract | createAccount | bond | name | proposal | input | batch | hasBase | setBase | unsetBase | setGlobal | hasRole | addRole | removeRole"
 
   [[GenesisDoc.Accounts]]
     Address = "93FE25A9897601EEF7779F1A53EFB8C0B433DA78"
@@ -36,8 +37,8 @@ ValidatorAddress = "0201EF325305ABD75E1FB8A8F539730F71547484"
     Name = "Participant_1"
     [GenesisDoc.Accounts.Permissions]
       [GenesisDoc.Accounts.Permissions.Base]
-        Perms = 2118
-        SetBit = 2118
+        Perms = "send | call | createContract | createAccount | bond | name | proposal | input | batch | hasBase | hasRole"
+        SetBit = "root | send | call | createContract | createAccount | bond | name | proposal | input | batch | hasBase | setBase | unsetBase | setGlobal | hasRole | addRole | removeRole"
 
   [[GenesisDoc.Accounts]]
     Address = "D1382AC92725F71F571E1BC898E8D8BFBBC35CA8"
@@ -46,8 +47,8 @@ ValidatorAddress = "0201EF325305ABD75E1FB8A8F539730F71547484"
     Name = "Participant_2"
     [GenesisDoc.Accounts.Permissions]
       [GenesisDoc.Accounts.Permissions.Base]
-        Perms = 2118
-        SetBit = 2118
+        Perms = "send | call | createContract | createAccount | bond | name | proposal | input | batch | hasBase | hasRole"
+        SetBit = "root | send | call | createContract | createAccount | bond | name | proposal | input | batch | hasBase | setBase | unsetBase | setGlobal | hasRole | addRole | removeRole"
 
   [[GenesisDoc.Accounts]]
     Address = "3D27518E4EBEA14AE69120D5043D2E4F5C4F1D06"
@@ -56,8 +57,8 @@ ValidatorAddress = "0201EF325305ABD75E1FB8A8F539730F71547484"
     Name = "Participant_3"
     [GenesisDoc.Accounts.Permissions]
       [GenesisDoc.Accounts.Permissions.Base]
-        Perms = 2118
-        SetBit = 2118
+        Perms = "send | call | createContract | createAccount | bond | name | proposal | input | batch | hasBase | hasRole"
+        SetBit = "root | send | call | createContract | createAccount | bond | name | proposal | input | batch | hasBase | setBase | unsetBase | setGlobal | hasRole | addRole | removeRole"
 
   [[GenesisDoc.Accounts]]
     Address = "0D073D962573D5E23E68FB1DE831D48F6FFD8041"
@@ -66,8 +67,8 @@ ValidatorAddress = "0201EF325305ABD75E1FB8A8F539730F71547484"
     Name = "Participant_4"
     [GenesisDoc.Accounts.Permissions]
       [GenesisDoc.Accounts.Permissions.Base]
-        Perms = 2118
-        SetBit = 2118
+        Perms = "send | call | createContract | createAccount | bond | name | proposal | input | batch | hasBase | hasRole"
+        SetBit = "root | send | call | createContract | createAccount | bond | name | proposal | input | batch | hasBase | setBase | unsetBase | setGlobal | hasRole | addRole | removeRole"
 
   [[GenesisDoc.Validators]]
     Address = "0201EF325305ABD75E1FB8A8F539730F71547484"
@@ -82,13 +83,20 @@ ValidatorAddress = "0201EF325305ABD75E1FB8A8F539730F71547484"
 
 [Tendermint]
   Seeds = ""
+  SeedMode = false
   PersistentPeers = ""
   ListenAddress = "tcp://0.0.0.0:26656"
   ExternalAddress = ""
   Moniker = ""
   TendermintRoot = ".burrow"
+  AuthorizedPeers = ""
+  CreateEmptyBlocks = true
+  CreateEmptyBlocksInterval = 0
 
 [Execution]
+  CallStackMaxDepth = 0
+  DataStackInitialCapacity = 1024
+  DataStackMaxDepth = 0
 
 [Keys]
   GRPCServiceEnabled = true
@@ -115,4 +123,3 @@ ValidatorAddress = "0201EF325305ABD75E1FB8A8F539730F71547484"
     [Logging.RootSink.Output]
       OutputType = "stderr"
       Format = "json"
-
