@@ -21,8 +21,8 @@ export CONTRACTS_DIRECTORY=${CONTRACTS_DIRECTORY:-"$CI_PROJECT_DIR/contracts/src
 export API_DIRECTORY=${API_DIRECTORY:-"$CI_PROJECT_DIR"}
 export WEBAPP_NAME=${WEBAPP_NAME:-"Monax Application"}
 export WEBAPP_EMAIL=${WEBAPP_EMAIL:-"help@$org_url"}
-export WEBAPP_URL=${WEBAPP_URL} # Front-end root e.g. staging.app.monax.io
-export API_URL=${API_URL} # API root e.g. staging.api.monax.io
+export WEBAPP_URL=${WEBAPP_URL} # Front-end root e.g. https://staging.app.monax.io
+export API_URL=${API_URL} # API root e.g. https://staging.api.monax.io
 
 config_app() {
     echo
