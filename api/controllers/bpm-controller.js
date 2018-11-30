@@ -117,7 +117,7 @@ const _validateDataMapping = (dataMapping) => {
   }
 };
 
-const _prepareDataMappings = async (userAddress, activityInstanceId, dataMappings, direction) => {
+const prepareDataMappings = async (userAddress, activityInstanceId, dataMappings, direction) => {
   dataMappings.forEach((mapping) => {
     if (!mapping.id) throw boom.badRequest('Data mapping id required');
   });
@@ -139,7 +139,7 @@ const _prepareDataMappings = async (userAddress, activityInstanceId, dataMapping
 };
 
 const _getInDataForActivity = async (userAddress, activityInstanceId, dataMappingId) => {
-  const preparedDataMappings = await _prepareDataMappings(
+  const preparedDataMappings = await prepareDataMappings(
     userAddress,
     activityInstanceId,
     dataMappingId ? [{ id: dataMappingId }] : [],
@@ -162,7 +162,7 @@ const _getInDataForActivity = async (userAddress, activityInstanceId, dataMappin
 };
 
 const _getOutDataForActivity = async (userAddress, activityInstanceId, dataMappingId) => {
-  const preparedDataMappings = await _prepareDataMappings(
+  const preparedDataMappings = await prepareDataMappings(
     userAddress,
     activityInstanceId,
     dataMappingId ? [{ id: dataMappingId }] : [],
@@ -199,7 +199,7 @@ const setDataMappings = asyncMiddleware(async ({ user, params: { activityInstanc
     dataMappings = body;
     if (!Array.isArray(dataMappings)) throw boom.badRequest('Expected array of data mapping objects');
   }
-  const preparedDataMappings = await _prepareDataMappings(user.address,
+  const preparedDataMappings = await prepareDataMappings(user.address,
     activityInstanceId, dataMappings, global.__monax_constants.DIRECTION.OUT);
   const setValuePromises = preparedDataMappings.map(data => dataStorage.activityOutDataSetters[`${data.dataType}`](user.address, activityInstanceId, data.id, data.value));
   await Promise.all(setValuePromises)
@@ -272,7 +272,7 @@ const completeActivity = asyncMiddleware(async (req, res) => {
   const { data } = req.body;
   if (!activityInstanceId) throw boom.badRequest('Activity instance Id required');
   if (data) {
-    const preparedData = await _prepareDataMappings(userAddr, activityInstanceId, data, global.__monax_constants.DIRECTION.OUT);
+    const preparedData = await prepareDataMappings(userAddr, activityInstanceId, data, global.__monax_constants.DIRECTION.OUT);
     if (preparedData.length === 1) {
       // if only one data mapping then writing data and completing activity
       // are carried out as part of a single transaction in solidity
@@ -577,6 +577,7 @@ module.exports = {
   createModelFromBpmn,
   validateProcess,
   completeActivity,
+  prepareDataMappings,
   signAndCompleteActivity,
   getProcessInstanceCount,
   getActivityInstances,
