@@ -696,17 +696,12 @@ describe(':: DATA MAPPING TEST ::', () => {
         expect(managerTasks[0].activityId).to.equal('apprTask_123');
         await assert.isFulfilled(api.setActivityDataValues(
           managerTasks[0].activityInstanceId,
-          [
-            { id: 'writeName', value: 'John Doe' },
-            { id: 'writeApproved', value: true }
-          ],
+          [{ id: 'writeApproved', value: true }],
           manager.token
         ));
         let data = await assert.isFulfilled(api.getActivityDataValues(managerTasks[0].activityInstanceId, manager.token));
-        expect(data.length).to.equal(2);
-        let name = data.filter(d => d.accessPointId === 'readName')[0].value;
+        expect(data.length).to.equal(1);
         let approved = data.filter(d => d.accessPointId === 'readApproved')[0].value;
-        expect(name).to.equal('John Doe');
         expect(approved).to.equal(true);
         managerTask = managerTasks[0];
         done();
@@ -720,15 +715,11 @@ describe(':: DATA MAPPING TEST ::', () => {
     try {
       let aiData = await api.getActivityInstance(managerTask.activityInstanceId, manager.token);
       expect(aiData.data).to.exist;
-      expect(aiData.data.in.length).to.equal(2);
-      expect(aiData.data.out.length).to.equal(2);
-      let readName = aiData.data.in.filter(d => d.dataMappingId === 'readName')[0];
+      expect(aiData.data.in.length).to.equal(1);
+      expect(aiData.data.out.length).to.equal(1);
       let readApproved = aiData.data.in.filter(d => d.dataMappingId === 'readApproved')[0];
-      let writeName = aiData.data.out.filter(d => d.dataMappingId === 'writeName')[0];
       let writeApproved = aiData.data.out.filter(d => d.dataMappingId === 'writeApproved')[0];
-      expect(readName.value).to.equal('John Doe');
       expect(readApproved.value).to.equal(true);
-      expect(writeName.dataPath).to.equal('name');
       expect(writeApproved.dataPath).to.equal('approved');
     } catch (err) {
       throw err;

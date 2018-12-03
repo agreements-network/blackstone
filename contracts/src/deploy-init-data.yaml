@@ -97,23 +97,9 @@ jobs:
     destination: $ApplicationRegistry
     bin: ApplicationRegistry
     function: addAccessPoint
-    data: ["WebAppApprovalForm", "writeName", 2, 1]
-
-- name: addWebAppApprovalFormInAccessPoint1
-  call:
-    destination: $ApplicationRegistry
-    bin: ApplicationRegistry
-    function: addAccessPoint
-    data: ["WebAppApprovalForm", "readName", 2, 0]
-
-- name: addWebAppApprovalFormOutAccessPoint2
-  call:
-    destination: $ApplicationRegistry
-    bin: ApplicationRegistry
-    function: addAccessPoint
     data: ["WebAppApprovalForm", "writeApproved", 1, 1]
 
-- name: addWebAppApprovalFormInAccessPoint2
+- name: addWebAppApprovalFormInAccessPoint1
   call:
     destination: $ApplicationRegistry
     bin: ApplicationRegistry
