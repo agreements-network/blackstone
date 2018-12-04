@@ -22,7 +22,7 @@
 
 ## Preliminary Note
 
-While the code in this repository is geared towards its use in the [Agreements Network](https://agreements.network), the lower-level functions and smart contracts are highly reusable and suited to build any blochchain-based ecosystem application. If you would like to learn more about the interfaces used in this system please visit the [documentation site](https://docs.agreements.network) for the network.
+While the code in this repository is geared towards its use in the [Agreements Network](https://agreements.network), the lower-level functions and smart contracts are highly reusable and suited to build any blockchain-based ecosystem application. If you would like to learn more about the interfaces used in this system please visit the [documentation site](https://docs.agreements.network) for the network.
 
 To ask questions or to learn more feel free to join the [Agreements Network mailing list](https://lists.agreements.network) to ask questions or to join the community.
 
