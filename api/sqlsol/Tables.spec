@@ -671,8 +671,7 @@
       },
       "fixed_scope": {
         "name": "fixed_scope",
-        "type": "bytes32",
-        "bytesToString": true
+        "type": "bytes32"
       },
       "data_path": {
         "name": "data_path",

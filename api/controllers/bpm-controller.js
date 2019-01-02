@@ -7,6 +7,8 @@ const {
   splitMeta,
   asyncMiddleware,
   byteLength,
+  setUserIds,
+  getNamesOfOrganizations,
 } = require(`${global.__common}/controller-dependencies`);
 const logger = require(`${global.__common}/monax-logger`);
 const log = logger.getLogger('agreements.bpm');
@@ -22,7 +24,7 @@ const dataStorage = require(path.join(`${global.__controllers}/data-storage-cont
 const getActivityInstances = asyncMiddleware(async (req, res) => {
   const data = await sqlCache.getActivityInstances(req.query);
   const activities = await pgCache.populateTaskNames(data);
-  return res.status(200).json(activities);
+  return res.status(200).json(activities.map(activity => format('Task', activity)));
 });
 
 const _getDataMappingDetails = async (userAddress, activityInstanceId, dataMappingIds = [], direction) => {
@@ -175,6 +177,11 @@ const getActivityInstance = asyncMiddleware(async (req, res) => {
   let activityInstanceResult = (await sqlCache.getActivityInstanceData(req.params.id, req.user.address))[0];
   if (!activityInstanceResult) throw boom.notFound(`Activity instance ${req.params.id} not found or user not authorized`);
   activityInstanceResult = (await pgCache.populateTaskNames([activityInstanceResult]))[0];
+  activityInstanceResult.performerName = (await setUserIds([{ address: activityInstanceResult.performer }]))[0];
+  if (!activityInstanceResult.performerName) {
+    activityInstanceResult.performerName = (await getNamesOfOrganizations([{ address: activityInstanceResult.performer }]))[0];
+  }
+  activityInstanceResult.performerName = activityInstanceResult.performerName.id || activityInstanceResult.performerName.name;
   activityInstanceResult.data = {};
   try {
     activityInstanceResult.data.in = await _getInDataForActivity(req.user.address, activityInstanceResult.activityInstanceId, null);
@@ -182,7 +189,7 @@ const getActivityInstance = asyncMiddleware(async (req, res) => {
     return res.status(200).json(activityInstanceResult);
   } catch (err) {
     log.error(`Failed to get data mappings for activity ${req.params.id} and user ${req.user.address}: ${err}`);
-    return res.status(200).json(activityInstanceResult);
+    return res.status(200).json(format('Task', activityInstanceResult));
   }
 });
 
@@ -213,7 +220,7 @@ const getTasksForUser = asyncMiddleware(async ({ user: { address } }, res) => {
   if (!address) throw boom.badRequest('No logged in user found');
   const data = await sqlCache.getTasksByUserAddress(address);
   const tasks = await pgCache.populateTaskNames(data);
-  return res.status(200).json(tasks);
+  return res.status(200).json(tasks.map(task => format('Task', task)));
 });
 
 const getModels = asyncMiddleware(async (req, res) => {

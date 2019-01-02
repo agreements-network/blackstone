@@ -424,7 +424,7 @@ const getActivityInstances = ({ processAddress, agreementAddress }) => {
 const getActivityInstanceData = (id, userAddress) => {
   const queryString = `SELECT ai.state, ai.process_instance_address as "processAddress", UPPER(encode(ai.activity_instance_id::bytea, 'hex')) as "activityInstanceId", ai.activity_id as "activityId", ai.created, ai.performer, ai.completed, ad.task_type as "taskType", ad.application as application,
       pd.model_address as "modelAddress", pm.id as "modelId", pd.id as "processDefinitionId", pd.process_definition_address as "processDefinitionAddress", app.web_form as "webForm", app.application_type as "applicationType",
-      pdat.address_value as "agreementAddress", pm.author as "modelAuthor", pm.is_private AS "isModelPrivate", agr.name as "agreementName", scopes.fixed_scope AS scope, encode(o.organization_id::bytea, 'hex') as "organizationKey" 
+      pdat.address_value as "agreementAddress", pm.author as "modelAuthor", pm.is_private AS "isModelPrivate", agr.name as "agreementName", encode(scopes.fixed_scope, 'hex') AS scope, encode(o.organization_id::bytea, 'hex') as "organizationKey" 
     FROM activity_instances ai
     JOIN process_instances pi ON ai.process_instance_address = pi.process_instance_address
     JOIN activity_definitions ad ON ai.activity_id = ad.activity_id AND pi.process_definition_address = ad.process_definition_address
@@ -449,13 +449,13 @@ const getActivityInstanceData = (id, userAddress) => {
             scopes.fixed_scope IS NULL AND UPPER('${DEFAULT_DEPARTMENT_ID}') IN (
               SELECT department_id FROM department_users du WHERE du.user_address = $2 AND du.organization_address = ai.performer
             )
-          ) OR scopes.fixed_scope IN (
-            select department_id FROM department_users du WHERE du.user_address = $2 AND du.organization_address = ai.performer
+          ) OR encode(scopes.fixed_scope, 'hex') IN (
+            select RPAD(encode(department_id::bytea, 'hex'), 64, '0') FROM department_users du WHERE du.user_address = $2 AND du.organization_address = ai.performer
           ) OR scopes.fixed_scope = (
-            select encode(organization_id::bytea, 'hex') FROM organization_accounts o WHERE o.organization_address = ai.performer
+            select organization_id FROM organization_accounts o WHERE o.organization_address = ai.performer
           ) OR (
-            scopes.fixed_scope IS NOT NULL AND scopes.fixed_scope NOT IN (
-              select department_id FROM organization_departments od WHERE od.organization_address = ai.performer
+            scopes.fixed_scope IS NOT NULL AND encode(scopes.fixed_scope, 'hex') NOT IN (
+              select RPAD(encode(department_id::bytea, 'hex'), 64, '0') FROM organization_departments od WHERE od.organization_address = ai.performer
             ) AND '${DEFAULT_DEPARTMENT_ID}' IN (
               SELECT department_id FROM department_users du WHERE du.user_address = $2 AND du.organization_address = performer
             )
@@ -490,7 +490,7 @@ const getTasksByUserAddress = (userAddress) => {
   // If we ever want to retrieve more process data (from other data objects in the process or flexibly retrieve data based on a future process configuration aka 'descriptors'), multiple queries will have to be used
   const queryString = `SELECT ai.state, ai.process_instance_address as "processAddress", UPPER(encode(ai.activity_instance_id::bytea, 'hex')) as "activityInstanceId", ai.activity_id as "activityId", ai.created, ai.performer, 
     pd.model_address as "modelAddress", pd.process_definition_address as "processDefinitionAddress", pd.id as "processDefinitionId", 
-    agr.name as "agreementName", pm.id as "modelId", pdat.address_value as "agreementAddress", scopes.fixed_scope AS scope, encode(o.organization_id::bytea, 'hex') as "organizationKey"
+    agr.name as "agreementName", pm.id as "modelId", pdat.address_value as "agreementAddress", encode(scopes.fixed_scope::bytea, 'hex') AS scope, encode(o.organization_id::bytea, 'hex') as "organizationKey"
     FROM activity_instances ai
     JOIN process_instances pi ON ai.process_instance_address = pi.process_instance_address
     JOIN activity_definitions ad ON ai.activity_id = ad.activity_id AND pi.process_definition_address = ad.process_definition_address
@@ -515,13 +515,13 @@ const getTasksByUserAddress = (userAddress) => {
             scopes.fixed_scope IS NULL AND '${DEFAULT_DEPARTMENT_ID}' IN (
               SELECT department_id FROM department_users du WHERE du.user_address = $1 AND du.organization_address = ai.performer
             )
-          ) OR scopes.fixed_scope IN (
-            select department_id FROM department_users du WHERE du.user_address = $1 AND du.organization_address = ai.performer
+          ) OR encode(scopes.fixed_scope, 'hex') IN (
+            select RPAD(encode(department_id::bytea, 'hex'), 64, '0') FROM department_users du WHERE du.user_address = $1 AND du.organization_address = ai.performer
           ) OR scopes.fixed_scope = (
-            select encode(organization_id::bytea, 'hex') FROM organization_accounts o WHERE o.organization_address = ai.performer
+            select organization_id FROM organization_accounts o WHERE o.organization_address = ai.performer
           ) OR (
-            scopes.fixed_scope IS NOT NULL AND scopes.fixed_scope NOT IN (
-              select department_id FROM organization_departments od WHERE od.organization_address = ai.performer
+            scopes.fixed_scope IS NOT NULL AND encode(scopes.fixed_scope, 'hex') NOT IN (
+              select RPAD(encode(department_id::bytea, 'hex'), 64, '0') FROM organization_departments od WHERE od.organization_address = ai.performer
             ) AND '${DEFAULT_DEPARTMENT_ID}' IN (
               SELECT department_id FROM department_users du WHERE du.user_address = $1 AND du.organization_address = performer
             )
