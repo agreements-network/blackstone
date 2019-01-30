@@ -4,6 +4,42 @@
 
 - Version [0.5.1](#v0.5.1)
 - Version [0.5.2](#v0.5.2)
+- Version [0.6.0](#v0.6.0)
+ 
+## <a name="v0.6.0">Release v0.6.0</a>
+
+This release contains larger changes around data mappings and process model parameters. Process models using the `NUMBER` parameter type must be upgraded under certain conditions (see Breaking Changes below).
+
+### Compatibility
+
+This release was tested with the following software and versions:
+
+|                    |        |
+| :----------------- | :----- |
+| Hyperledger Burrow | 0.23.3 |
+| Solc               | 0.4.25 |
+
+### Breaking Changes
+
+- The modifier `AbstractUpgradeable.pre_higherVersionOnly(address)` was changed to revert rather than simply return if the passed Versioned contract is of a smaller version.
+- Deleted contract `agreements/ParameterTypesAccess.sol` and moved the enum for parameter types into `commons-utils/DataTypesAccess.sol`.
+- Changed the XML process model and bpm-parser.js to use different format for activity data mapping IDs. Added new INOUT direction value to make it easier to use a single data mapping for connecting the same data field as input and output.
+- Changed the GET /bpm/activity-instances response attribute for data mappings `accessPointId` to `dataMappingId` and enhanced the data information with the `parameterType`.
+- Changed the API to translate `NUMBER` parameter types into `int` instead of `uint`. The new `POSITIVE_NUMBER` parameter type now connect to `uint`. Process models that used NUMBER parameters in data mappings to applications requiring a `uint` (e.g. TotalCounterCheck, NumberIncrementor, NumberDecrementor) must be upgraded to use POSITIVE_NUMBER or they will not work as expected!
+
+### Features / Bug Fixes
+
+- Added support for Hyperledger Burrow 0.23.3
+- Fixed a bug in contracts-controller.js to use the completeActivityWithData function correctly and complete an ActivityInstance with single data in one transaction
+- Added performer name to GET /bpm/activity-instances response
+- Allow external users to register for an account address only via email
+- Updated GET /bpm/process-definitions route to add optional query params
+- Added storage of data definitions access functions in `bpm-model/DefaultProcessModel.sol`. The data parameters from the XML process model are now persisted in the ProcessModel and exported to a new Vent table PROCESS_MODEL_DATA
+- Added 4 new parameter types to `common/monax-constants.js` and `commons-utils/DataTypesAccess.sol`: BYTES32, DOCUMENT, LARGE_TEXT, POSITIVE_NUMBER
+- Improved API with ability to add your custom middleware to the blackstone API. Also added the ability to accept a custom passport config.
+- Added support for external users to execute IN/OUT data mappings on activities
+- Upgraded `bpm-model/DefaultProcessModelRepository.sol` to version 1.1.0 in order to support an upgrade to changed contracts `DefaultProcessModel` and `DefaultProcessDefinition` which adds events for data-mapping information that populates the new Vent table `DATA_MAPPINGS`. An upgrade script for existing deployments `contracts/upgrade/ProcessModelRepository-1.1.0.yaml` was added.
+
 
 ## <a name="v0.5.2">Release v0.5.2</a>
 
