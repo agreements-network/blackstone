@@ -25,6 +25,7 @@
     "password": {"ENV": "POSTGRES_DB_PASSWORD"},
     "host": {"ENV": "POSTGRES_DB_HOST"},
     "port": {"ENV": "POSTGRES_DB_PORT"},
-    "database": {"ENV": "POSTGRES_DB_DATABASE"}
+    "database": {"ENV": "POSTGRES_DB_DATABASE"},
+    "schema": {"ENV": "POSTGRES_DB_SCHEMA"}
   }
 }
