@@ -349,7 +349,7 @@ contract DefaultParticipantsManager is Versioned(1,0,0), AbstractEventListener, 
         } else if (_event == EVENT_REMOVE_DEPARTMENT_USER &&
             ParticipantsManagerDb(database).organizationExists(_source)) {
             emit RemoveDepartmentUser(TABLE_DEPARTMENT_USERS, _source, _id, _userAccount);
-            emit LogDepartmentUserRevomal(
+            emit LogDepartmentUserRemoval(
                 EVENT_ID_DEPARTMENT_USERS,
                 bytes32("delete"),
                 _source,
