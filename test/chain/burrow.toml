@@ -97,6 +97,7 @@ ValidatorAddress = "0201EF325305ABD75E1FB8A8F539730F71547484"
   CallStackMaxDepth = 0
   DataStackInitialCapacity = 1024
   DataStackMaxDepth = 0
+  VMOptions = ["DebugOpcodes"]
 
 [Keys]
   GRPCServiceEnabled = true
