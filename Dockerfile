@@ -32,6 +32,15 @@ ARG INSTALL_BASE=/usr/local/bin
 
 COPY --from=burrow-builder /usr/local/bin/burrow $INSTALL_BASE/
 COPY --from=solc-builder /usr/bin/solc $INSTALL_BASE/
+
+# Create user and group unless they already exist
+ARG UID=0
+ARG GID=0
+ARG HOME_DIR=/home/api
+COPY ./scripts/ensure_user.sh $INSTALL_BASE/
+RUN ensure_user.sh $UID $GID $HOME_DIR
+USER $UID:$GID
+
 # For doc pushing
 COPY ssh_config /root/.ssh/config
 # test chain config

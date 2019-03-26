@@ -67,6 +67,12 @@ push_docs: docs
 
 ### Docker Compose
 
+DCB_ARGS := --build-arg UID=$(shell id -u) --build-arg GID=$(shell id -g)
+
+.PHONY: docker_build
+docker_build:
+	docker-compose build ${DCB_ARGS}
+
 # To catch DCB args above so we build with CI user
 .PHONY: docker_test
 docker_test: docker_run_deps
@@ -75,19 +81,19 @@ docker_test: docker_run_deps
 
 # Just run the dependency services in docker compose (you can build and deploy contracts and the run the API locally)
 .PHONY: docker_run_deps
-docker_run_deps:
+docker_run_deps: docker_build
 	docker-compose up -d chain vent postgres hoard
 
 # Build all the contracts and run the API its dependencies
 .PHONY: docker_run_all
-docker_run_all:
+docker_run_all: docker_build
 	docker-compose run api make all
 	docker-compose up -d
 	docker-compose logs --follow api &
 
 # Just run the API and its dependencies
 .PHONY: docker_run
-docker_run:
+docker_run: docker_build
 	docker-compose up -d
 	docker-compose logs --follow api &
 
