@@ -122,11 +122,14 @@ describe('Archetypes', () => {
 
   it('Should register a user', async () => {
     await api.registerUser(archUser);
+    await global.sleep(1000);
     await api.activateUser(archUser);
+    await global.sleep(1000);
     const loginResult = await api.loginUser(archUser);
+    await global.sleep(1000);
     expect(loginResult.token).to.exist;
     token = loginResult.token;
-  }).timeout(10000);
+  }).timeout(global.testTimeoutMS);
 
   it('Should create a model and process definitions', async () => {
     // DEPLOY FORMATION MODEL
@@ -356,6 +359,7 @@ describe(':: Archetype Packages and Agreement Collections ::', () => {
     // REGISTER USERS
     let registerResult1 = await api.registerUser(user1);
     let registerResult2 = await api.registerUser(user2);
+
     user1.address = registerResult1.address;
     user2.address = registerResult2.address;
     expect(user1.address).to.exist

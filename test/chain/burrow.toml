@@ -82,17 +82,7 @@ ValidatorAddress = "0201EF325305ABD75E1FB8A8F539730F71547484"
       Amount = 9999999999
 
 [Tendermint]
-  Seeds = ""
-  SeedMode = false
-  PersistentPeers = ""
-  ListenAddress = "tcp://0.0.0.0:26656"
-  ExternalAddress = ""
-  Moniker = "TestValidator0"
-  TendermintRoot = ".burrow"
-  AuthorizedPeers = ""
-  CreateEmptyBlocks = true
-  CreateEmptyBlocksInterval = 0
-  TimeoutFactor = 0.001
+  Enabled = false
 
 [Execution]
   CallStackMaxDepth = 0
