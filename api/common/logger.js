@@ -1,5 +1,6 @@
 const log4js = require('log4js');
 const fs = require('fs');
+process.env.API_LOG_LEVEL = process.env.API_LOG_LEVEL || 'DEBUG';
 
 log4js.addLayout('json', config => (_logEvent) => {
   const logEvent = Object.assign({}, _logEvent);
@@ -18,7 +19,8 @@ log4js.addLayout('json', config => (_logEvent) => {
     fs.mkdirSync('logs');
   }
 
-  const config = require(`${global.__config}/log4js.json`);
+  const configFile = String(process.env.NODE_ENV).startsWith('dev') ? 'development-log4js.js' : 'production-log4js.js';
+  const config = require(`../config/${configFile}`);
   log4js.configure(config);
 
   module.exports = log4js;
