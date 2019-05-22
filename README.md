@@ -408,7 +408,7 @@ To clean the **entire** system (including node_modules and bundle_cache) run the
 make clean_all
 ```
 
-### Development command examples
+### Development commandline examples
 
 #### Run pending migrations
 
