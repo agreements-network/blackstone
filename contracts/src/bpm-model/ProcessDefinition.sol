@@ -90,6 +90,17 @@ contract ProcessDefinition is VersionedArtifact, Bytes32Identifiable {
 	function createGateway(bytes32 _id, BpmModel.GatewayType _type) external;
 
 	/**
+	 * Creates a new intermediate event definition with the specified parameters and conditional (DataStorage-based) data.
+	 * @param _id the ID under which to register the element
+	 * @param _eventType a BpmModel.EventType
+	 * @param _eventBehavior a BpmModel.IntermediateEventBehavior
+	 * @param _dataPath a data path (key) to use for data lookup on a DataStorage.
+	 * @param _dataStorageId an optional key to identify a DataStorage as basis for the data path other than the default one
+	 * @param _dataStorage an optional address of a DataStorage as basis for the data path other than the default one
+	 */
+	function createIntermediateEvent(bytes32 _id, BpmModel.EventType _eventType, BpmModel.IntermediateEventBehavior _eventBehavior, bytes32 _dataPath, bytes32 _dataStorageId, address _dataStorage) external;
+
+	/**
 	 * @dev Creates a transition between the specified source and target elements.
 	 * @param _source the start of the transition
 	 * @param _target the end of the transition
