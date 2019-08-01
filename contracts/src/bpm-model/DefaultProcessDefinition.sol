@@ -172,7 +172,8 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 
 	/**
 	 * @dev Creates a new BpmModel.Gateway model element with the specified ID and type
-	 * REVERTS: if the ID already exists
+	 * REVERTS if:
+	 * - the ID already exists
 	 * @param _id the ID under which to register the element
 	 * @param _type a BpmModel.GatewayType
 	 */
@@ -186,6 +187,37 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 		graphElements.rows[_id].elementType = BpmModel.ModelElementType.GATEWAY;
 		graphElements.rows[_id].gateway.id = _id;
 		graphElements.rows[_id].gateway.gatewayType = _type;
+		graphElements.rows[_id].exists = true;
+	}
+
+	/**
+	 * Creates a new intermediate event definition with the specified parameters and conditional (DataStorage-based) data.
+	 * REVERTS if:
+	 * - the ID already exists
+	 * @param _id the ID under which to register the element
+	 * @param _eventType a BpmModel.EventType. Note that TIMER_TIMESTAMP and TIMER_DURATION event types enforce CATCHING behavior.
+	 * @param _eventBehavior a BpmModel.IntermediateEventBehavior
+	 * @param _dataPath a data path (key) to use for data lookup on a DataStorage.
+	 * @param _dataStorageId an optional key to identify a DataStorage as basis for the data path other than the default one
+	 * @param _dataStorage an optional address of a DataStorage as basis for the data path other than the default one
+	 */
+	function createIntermediateEvent(bytes32 _id, BpmModel.EventType _eventType, BpmModel.IntermediateEventBehavior _eventBehavior, bytes32 _dataPath, bytes32 _dataStorageId, address _dataStorage)
+		external
+		pre_invalidate
+	{
+		ErrorsLib.revertIf(graphElements.rows[_id].exists,
+			"BPM400","ProcessDefinition.createIntermediateEvent","Graph element with _id already exists");
+		graphElements.intermediateEventIds.push(_id);
+		graphElements.rows[_id].elementType = BpmModel.ModelElementType.INTERMEDIATE_EVENT;
+		graphElements.rows[_id].intermediateEvent.id = _id;
+		graphElements.rows[_id].intermediateEvent.eventType = _eventType;
+		if (_eventType == BpmModel.EventType.TIMER_TIMESTAMP || _eventType == BpmModel.EventType.TIMER_DURATION)
+			graphElements.rows[_id].intermediateEvent.eventBehavior = BpmModel.IntermediateEventBehavior.CATCHING;
+		else
+			graphElements.rows[_id].intermediateEvent.eventBehavior = _eventBehavior;
+		graphElements.rows[_id].intermediateEvent.conditionalData.dataPath = _dataPath;
+		graphElements.rows[_id].intermediateEvent.conditionalData.dataStorageId = _dataStorageId;
+		graphElements.rows[_id].intermediateEvent.conditionalData.dataStorage = _dataStorage;
 		graphElements.rows[_id].exists = true;
 	}
 
@@ -212,6 +244,12 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 				"BPM400","ProcessDefinition.createTransition","Not allowed to overwrite an existing successor of an activity");
 			graphElements.rows[_source].activity.successor = _target;
 		}
+		else if (graphElements.rows[_source].elementType == BpmModel.ModelElementType.INTERMEDIATE_EVENT) {
+			// not allowed to overwrite an existing transition since it can leave dangling references if it was connected to a gateway
+			ErrorsLib.revertIf(graphElements.rows[_source].intermediateEvent.successor != "",
+				"BPM400","ProcessDefinition.createTransition","Not allowed to overwrite an existing successor of an intermediate event");
+			graphElements.rows[_source].intermediateEvent.successor = _target;
+		}
 		else if (graphElements.rows[_source].elementType == BpmModel.ModelElementType.GATEWAY) {
 			if (!graphElements.rows[_source].gateway.outputs.contains(_target)) { // avoid duplicates
 				graphElements.rows[_source].gateway.outputs.push(_target);
@@ -223,6 +261,12 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 			ErrorsLib.revertIf(graphElements.rows[_target].activity.predecessor != "",
 				"BPM400","ProcessDefinition.createTransition","Not allowed to overwrite an existing predecessor of an activity");
 			graphElements.rows[_target].activity.predecessor = _source;
+		}
+		if (graphElements.rows[_target].elementType == BpmModel.ModelElementType.INTERMEDIATE_EVENT) {
+			// not allowed to overwrite an existing transition since it can leave dangling references if it was connected to a gateway
+			ErrorsLib.revertIf(graphElements.rows[_target].intermediateEvent.predecessor != "",
+				"BPM400","ProcessDefinition.createTransition","Not allowed to overwrite an existing predecessor of an intermediate event");
+			graphElements.rows[_target].intermediateEvent.predecessor = _source;
 		}
 		else if (graphElements.rows[_target].elementType == BpmModel.ModelElementType.GATEWAY) {
 			if (!graphElements.rows[_target].gateway.inputs.contains(_source)) { // avoid duplicates
@@ -794,6 +838,17 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 	 	if (startActivity.isEmpty())
 			return (false, "no start activity");
 
+		BpmModel.IntermediateEvent memory ie;
+	 	for (i=0; i<graphElements.intermediateEventIds.length; i++) {
+	 		ie = graphElements.rows[graphElements.intermediateEventIds[i]].intermediateEvent;
+	 		if (ie.predecessor.isEmpty()) {
+	 			return (false, "interm. event w/out predecessor");
+	 		}
+	 		if (ie.successor.isEmpty()) {
+	 			return (false, "interm. event w/out successor");
+	 		}
+	 	}
+
 		BpmModel.Gateway memory gw;
 	 	for (i=0; i<graphElements.gatewayIds.length; i++) {
 	 		gw = graphElements.rows[graphElements.gatewayIds[i]].gateway;
@@ -805,9 +860,6 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 			}
 	 	}
 
-		// TODO need deeper evaluation: once a start activity is defined, traverse the graph and make sure all activities/gateways are reachable.
-		// this could be done in a walkGraph() function which takes 'visitor' function as parameter which can be used to validate
-	 	
 		valid = true;
 	 	return (true, "model valid");
 	 }
