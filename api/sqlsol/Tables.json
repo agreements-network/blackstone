@@ -1096,5 +1096,162 @@
       }
     ],
     "DeleteMarkerField": "__DELETE__"
+  },
+  {
+    "TableName": "event_log",
+    "Filter": "EventType = 'LogEvent'",
+    "FieldMappings": [
+      {
+        "Field": "activityInstanceId",
+        "ColumnName": "activity_instance_id",
+        "Type": "bytes32"
+      },
+      {
+        "Field": "activityId",
+        "ColumnName": "activity_id",
+        "Type": "bytes32",
+        "BytesToString": true
+      },
+      {
+        "Field": "processInstanceAddress",
+        "ColumnName": "process_instance_address",
+        "Type": "address"
+      },
+      {
+        "Field": "created",
+        "ColumnName": "created",
+        "Type": "uint"
+      },
+      {
+        "Field": "completed",
+        "ColumnName": "completed",
+        "Type": "uint"
+      },
+      {
+        "Field": "performer",
+        "ColumnName": "performer",
+        "Type": "address"
+      },
+      {
+        "Field": "completedBy",
+        "ColumnName": "completed_by",
+        "Type": "address"
+      },
+      {
+        "Field": "state",
+        "ColumnName": "state",
+        "Type": "uint8"
+      },
+      {
+        "Field": "agreementAddress",
+        "ColumnName": "agreement_address",
+        "Type": "address"
+      },
+      {
+        "Field": "archetypeAddress",
+        "ColumnName": "archetype_address",
+        "Type": "address"
+      },
+      {
+        "Field": "creator",
+        "ColumnName": "creator",
+        "Type": "address"
+      },
+      {
+        "Field": "owner",
+        "ColumnName": "owner",
+        "Type": "address"
+      },
+      {
+        "Field": "isPrivate",
+        "ColumnName": "is_private",
+        "Type": "bool"
+      },
+      {
+        "Field": "legalState",
+        "ColumnName": "legal_state",
+        "Type": "uint8"
+      },
+      {
+        "Field": "maxEventCount",
+        "ColumnName": "max_event_count",
+        "Type": "uint32"
+      },
+      {
+        "Field": "formationProcessInstance",
+        "ColumnName": "formation_process_instance",
+        "Type": "address"
+      },
+      {
+        "Field": "executionProcessInstance",
+        "ColumnName": "execution_process_instance",
+        "Type": "address"
+      },
+      {
+        "Field": "privateParametersFileReference",
+        "ColumnName": "private_parameters_file_reference",
+        "Type": "string"
+      },
+      {
+        "Field": "eventLogFileReference",
+        "ColumnName": "event_log_file_reference",
+        "Type": "string"
+      },
+      {
+        "Field": "signatureLogFileReference",
+        "ColumnName": "signature_log_file_reference",
+        "Type": "string"
+      },
+      {
+        "Field": "price",
+        "ColumnName": "price",
+        "Type": "uint"
+      },
+      {
+        "Field": "author",
+        "ColumnName": "author",
+        "Type": "address"
+      },
+      {
+        "Field": "active",
+        "ColumnName": "active",
+        "Type": "bool"
+      },
+      {
+        "Field": "successor",
+        "ColumnName": "successor",
+        "Type": "address"
+      },
+      {
+        "Field": "formationProcessDefinition",
+        "ColumnName": "formation_process_definition",
+        "Type": "address"
+      },
+      {
+        "Field": "executionProcessDefinition",
+        "ColumnName": "execution_process_definition",
+        "Type": "address"
+      },
+      {
+        "Field": "userAccountAddress",
+        "ColumnName": "user_account_address",
+        "Type": "address"
+      },
+      {
+        "Field": "processDefinitionAddress",
+        "ColumnName": "process_definition_address",
+        "Type": "address"
+      },
+      {
+        "Field": "state",
+        "ColumnName": "state",
+        "Type": "uint8"
+      },
+      {
+        "Field": "startedBy",
+        "ColumnName": "started_by",
+        "Type": "address"
+      }
+    ]
   }
 ]

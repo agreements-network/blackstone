@@ -163,22 +163,16 @@ const QUERIES = {
     WHERE ap.package_id = $1`,
 
   getAgreementParties: `SELECT parties.party AS address, parties.signature_timestamp::integer AS "signatureTimestamp",
-    parties.signed_by AS "signedBy", party.name AS "partyDisplayName",
+    parties.signed_by AS "signedBy", COALESCE(party.username, party.name) AS "partyDisplayName",
     signer.username AS "signedByDisplayName", canceler.username AS "canceledByDisplayName",
     parties.cancelation_timestamp::integer AS "cancelationTimestamp", parties.canceled_by AS "canceledBy",
     UPPER(encode(scopes.fixed_scope, 'hex')) AS scope, 
     UPPER(encode(o.organization_id::bytea, 'hex')) AS "organizationKey",
     dd.name AS "scopeDisplayName"
     FROM ${chainDb}.agreement_to_party parties
-    LEFT JOIN (
-      SELECT (
-        CASE
-        WHEN first_name IS NULL OR last_name IS NULL THEN username
-        ELSE CONCAT(first_name, ' ', last_name)
-        END
-      ) AS name, address, external_user FROM ${appDb}.users
+    LEFT JOIN (SELECT username, NULL AS name, address, external_user FROM ${appDb}.users
       UNION
-      SELECT name, address, FALSE AS external_user FROM ${appDb}.organizations
+      SELECT NULL AS username, name, address, FALSE AS external_user FROM ${appDb}.organizations
     ) party ON parties.party = party.address
     LEFT JOIN ${appDb}.users signer ON parties.signed_by = signer.address
     LEFT JOIN ${appDb}.users canceler ON parties.canceled_by = canceler.address
@@ -288,16 +282,17 @@ const QUERIES = {
 
   insertUserActivationCode: `INSERT INTO ${appDb}.user_activation_requests (user_id, activation_code_digest) VALUES($1, $2);`,
 
-  getParticipantNames: `SELECT address, name AS "displayName"
+  getParticipantNames: `SELECT address, COALESCE(name, username) AS "displayName"
     FROM (
-      SELECT (
-        CASE
-        WHEN first_name IS NULL OR last_name IS NULL THEN username
-        ELSE CONCAT(first_name, ' ', last_name)
-        END
-      ) AS name, address FROM ${appDb}.users
+      SELECT username,
+        (
+          CASE
+            WHEN first_name IS NOT NULL THEN concat_ws(' ', first_name, last_name)
+            ELSE NULL
+            END
+        ) AS name, address FROM ${appDb}.users
       UNION
-      SELECT name, address FROM ${appDb}.organizations
+      SELECT NULL AS username, name, address FROM ${appDb}.organizations
     ) accounts
     WHERE address = ANY($1);`,
 
@@ -678,14 +673,29 @@ const getAgreementData = (agreementAddress, userAccount, includePublic = true) =
     a.max_event_count::integer as "maxNumberOfAttachments", a.is_private as "isPrivate", a.legal_state as "legalState",
     a.formation_process_instance as "formationProcessInstance", a.execution_process_instance as "executionProcessInstance",
     UPPER(encode(ac.collection_id::bytea, 'hex')) as "collectionId",
-    arch.formation_process_definition as "formationProcessDefinition", arch.execution_process_definition as "executionProcessDefinition", (
-      SELECT COALESCE(accounts.username, accounts.name)
+    arch.formation_process_definition as "formationProcessDefinition", arch.execution_process_definition as "executionProcessDefinition",
+    (
+      SELECT COALESCE(creator_account.name, creator_account.username)
       FROM (
-        SELECT username, NULL as name FROM ${appDb}.users u WHERE u.address = a.creator
+        SELECT username, 
+          (CASE WHEN u.first_name IS NOT NULL THEN concat_ws(' ', u.first_name, u.last_name) ELSE NULL END) AS name
+          FROM ${appDb}.users u WHERE u.address = a.creator
         UNION
-        SELECT NULL as username, name FROM ${appDb}.organizations o WHERE o.address = a.creator
-      ) accounts
+        SELECT NULL as username, name
+          FROM ${appDb}.organizations o WHERE o.address = a.creator
+      ) creator_account
     ) AS "creatorDisplayName",
+    (
+      SELECT COALESCE(owner_account.name, owner_account.username)
+      FROM (
+        SELECT username,
+          (CASE WHEN u.first_name IS NOT NULL THEN concat_ws(' ', u.first_name, u.last_name) ELSE NULL END) as name
+          FROM ${appDb}.users u WHERE u.address = a.owner
+        UNION
+        SELECT NULL as username, name
+          FROM ${appDb}.organizations o WHERE o.address = a.owner
+      ) owner_account
+    ) AS "ownerDisplayName",
     ${checkParties(userAccount)} AS "isParty",
     ${checkCreator(userAccount)} AS "isCreator",
     ${checkAgreementTasks(userAccount)} AS "isAssignedTask"
@@ -1087,7 +1097,7 @@ const getParticipantNames = addresses => runQuery(QUERIES.getParticipantNames, [
 
 const getUserByIdType = async ({ idType, id }) => {
   try {
-    const text = `SELECT id, username, email, address, password_digest AS "passwordDigest", external_user AS "externalUser",
+    const text = `SELECT id, username, email, address, password_digest AS "passwordDigest",
     created_at AS "createdAt", activated, first_name AS "firstName", last_name AS "lastName", country, region,
     is_producer AS "isProducer", onboarding
     FROM ${appDb}.users
