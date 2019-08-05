@@ -19,6 +19,9 @@ services:
   chain:
     # We could reference hyperledger/burrow:$version directly here but for the sake of only specifying our dependency version
     # once we do it in the project Dockerfile
+    # TODO - once latest burrow with log table feature is ready, revert back to the below:
+    # build: .
+    image: quay.io/monax/burrow:0.27.0-dev-2019-08-02-fd379f4e
     build: .
     ports:
     # GRPC port for most interaction
