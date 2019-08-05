@@ -424,4 +424,3 @@ Run a yaml script, e.g. a manual upgrade.
 cd contracts/src
 burrow deploy --chain=localhost:10997 --address=<deployment-address> --bin-path ./bin ../upgrades/NewServiceUpgrade-1.2.7.yaml
 ```
-
