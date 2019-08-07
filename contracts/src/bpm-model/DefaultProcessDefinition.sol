@@ -222,6 +222,29 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 	}
 
 	/**
+	 * @dev 
+	 */
+	function addBoundaryEvent(bytes32 _activityId, bytes32 _id, BpmModel.EventType _eventType, BpmModel.BoundaryEventBehavior _eventBehavior, bytes32 _dataPath, bytes32 _dataStorageId, address _dataStorage)
+		external
+		pre_invalidate
+	{
+		ErrorsLib.revertIf(!(graphElements.rows[_activityId].exists && graphElements.rows[_activityId].elementType == BpmModel.ModelElementType.ACTIVITY), 
+			ErrorsLib.RESOURCE_NOT_FOUND(), "DefaultProcessDefinition.addBoundaryEvent", "Cannot create boundary event since given activityId is either non-existent or not of the correct type BpmModel.ModelElementType.ACTIVITY");
+		ErrorsLib.revertIf(graphElements.rows[_id].exists,
+			"BPM400","ProcessDefinition.addBoundaryEvent","Graph element with _id already exists");
+		graphElements.boundaryEventIds.push(_id);
+		graphElements.rows[_id].elementType = BpmModel.ModelElementType.BOUNDARY_EVENT;
+		graphElements.rows[_id].boundaryEvent.id = _id;
+		graphElements.rows[_id].boundaryEvent.eventType = _eventType;
+		graphElements.rows[_id].boundaryEvent.eventBehavior = _eventBehavior;
+		graphElements.rows[_id].boundaryEvent.conditionalData.dataPath = _dataPath;
+		graphElements.rows[_id].boundaryEvent.conditionalData.dataStorageId = _dataStorageId;
+		graphElements.rows[_id].boundaryEvent.conditionalData.dataStorage = _dataStorage;
+		graphElements.rows[_id].exists = true;
+
+	}
+
+	/**
 	 * @dev Creates a transition between the specified source and target objects.
 	 * REVERTS if:
 	 * - no element with the source ID exists
@@ -255,6 +278,11 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 				graphElements.rows[_source].gateway.outputs.push(_target);
 			}
 		}
+		else {
+			ErrorsLib.revert(ErrorsLib.INVALID_INPUT(),
+				"ProcessDefinition.createTransition", "Unsupported combination of source and target model element types");
+		}
+
 		// TARGET
 		if (graphElements.rows[_target].elementType == BpmModel.ModelElementType.ACTIVITY) {
 			// not allowed to overwrite an existing transition since it can leave dangling references if it was connected to a gateway
@@ -272,6 +300,10 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 			if (!graphElements.rows[_target].gateway.inputs.contains(_source)) { // avoid duplicates
 				graphElements.rows[_target].gateway.inputs.push(_source);
 			}
+		}
+		else {
+			ErrorsLib.revert(ErrorsLib.INVALID_INPUT(),
+				"ProcessDefinition.createTransition", "Unsupported combination of source and target model element types");
 		}
 
 		return BaseErrors.NO_ERROR();
@@ -305,7 +337,7 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 	 */
 	function createDataMapping(bytes32 _activityId, BpmModel.Direction _direction, bytes32 _accessPath, bytes32 _dataPath, bytes32 _dataStorageId, address _dataStorage) external pre_invalidate {
 		ErrorsLib.revertIf(!(graphElements.rows[_activityId].exists && graphElements.rows[_activityId].elementType == BpmModel.ModelElementType.ACTIVITY), 
-			ErrorsLib.RESOURCE_NOT_FOUND(), "DefaultProcessDefinition.createDataMapping", "Cannot create data mapping since given activityId is either non-existent or may belong to BpmModel.ModelElementType.GATEWAY");
+			ErrorsLib.RESOURCE_NOT_FOUND(), "DefaultProcessDefinition.createDataMapping", "Cannot create data mapping since given activityId is either non-existent or not of the correct type BpmModel.ModelElementType.ACTIVITY");
 		if (_direction == BpmModel.Direction.IN) {
 			if (!graphElements.rows[_activityId].activity.inMappings[_accessPath].exists) {
 				graphElements.rows[_activityId].activity.inMappingKeys.push(_accessPath);

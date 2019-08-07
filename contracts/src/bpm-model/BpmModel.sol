@@ -14,6 +14,7 @@ library BpmModel {
     enum TaskType {NONE,USER,SERVICE,EVENT}
     enum GatewayType {XOR,OR,AND}
     enum IntermediateEventBehavior {CATCHING,THROWING}
+    enum BoundaryEventBehavior {INTERRUPTING,NON_INTERRUPTING}
     enum EventType {TIMER_TIMESTAMP,TIMER_DURATION}
     enum TaskBehavior {SEND,SENDRECEIVE,RECEIVE}
     enum ApplicationType {EVENT,SERVICE,WEB}
@@ -29,6 +30,7 @@ library BpmModel {
         ActivityDefinition activity;
         Gateway gateway;
         IntermediateEvent intermediateEvent;
+        BoundaryEvent boundaryEvent;
         bool exists;
     }
 
@@ -41,6 +43,7 @@ library BpmModel {
         bytes32[] activityIds;
         bytes32[] gatewayIds;
         bytes32[] intermediateEventIds;
+        bytes32[] boundaryEventIds;
     }
 
     /**
@@ -107,6 +110,7 @@ library BpmModel {
         bytes32[] outMappingKeys;
         mapping(bytes32 => DataStorageUtils.ConditionalData) inMappings;
         mapping(bytes32 => DataStorageUtils.ConditionalData) outMappings;
+        bytes32[] boundaryEventIds;
     }
 
     /**
@@ -130,6 +134,19 @@ library BpmModel {
         DataStorageUtils.ConditionalData conditionalData;
         Primitive primitiveData;
         bytes32 predecessor;
+        bytes32 successor;
+    }
+
+    /**
+     * BOUNDARY EVENT
+     */
+    struct BoundaryEvent {
+        bytes32 id;
+        EventType eventType;
+        BoundaryEventBehavior eventBehavior;
+        DataStorageUtils.ConditionalData conditionalData;
+        Primitive primitiveData;
+        bytes32 predecessor; // the predecessory for a boundary event would always be the associated activity ID
         bytes32 successor;
     }
 
