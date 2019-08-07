@@ -8,7 +8,7 @@ import "commons-collections/DataStorageUtils.sol";
  */
 library BpmModel {
 
-    enum ModelElementType {ACTIVITY,GATEWAY,INTERMEDIATE_EVENT}
+    enum ModelElementType {ACTIVITY,GATEWAY,INTERMEDIATE_EVENT, BOUNDARY_EVENT}
     enum ActivityType {TASK,SUBPROCESS}
     // TaskTypes were reduced/modified from BPMN spec (USER,MANUAL,SERVICE,SCRIPT,RULE,SEND,RECEIVE) to fit better to EVM reality
     enum TaskType {NONE,USER,SERVICE,EVENT}

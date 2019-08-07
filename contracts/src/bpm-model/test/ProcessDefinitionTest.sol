@@ -14,6 +14,8 @@ contract ProcessDefinitionTest {
 	string constant SUCCESS = "success";
 	string constant functionSigCreateTransition = "createTransition(bytes32,bytes32)";
 	string constant functionSigCreateTransitionConditionForAddress = "createTransitionConditionForAddress(bytes32,bytes32,bytes32,bytes32,address,uint8,address)";
+	string constant functionSigCreateIntermediateEvent = "createIntermediateEvent(bytes32,uint8,uint8,bytes32,bytes32,address)";
+	string constant functionSigAddBoundaryEvent = "addBoundaryEvent(bytes32,bytes32,uint8,uint8,bytes32,bytes32,address)";
 
 	// test data
 	bytes32 activity1Id = "activity1";
@@ -21,7 +23,8 @@ contract ProcessDefinitionTest {
 	bytes32 activity3Id = "activity3";
 	bytes32 activity4Id = "activity4";
 	bytes32 activity5Id = "activity5";
-	bytes32 event1Id = "event1";
+	bytes32 intermediateEvent1Id = "event1";
+	bytes32 boundaryEvent1Id = "boundaryEvent1";
 	bytes32 transition1Id = "transition1";
 	bytes32 gateway1Id = "gateway1";
 	bytes32 gateway2Id = "gateway2";
@@ -43,8 +46,9 @@ contract ProcessDefinitionTest {
 	 */
 	function testProcessDefinition() external returns (string memory) {
 	
-		//                                              
-		// Graph: activity1 -> activity2 -> XOR SPLIT -/---------------> XOR JOIN -> event1 -> activity4
+		//                               boundaryEvent1
+		//                              /                
+		// Graph: activity1 -> activity2 -> XOR SPLIT -/---------------> XOR JOIN -> intermediateEvent1 -> activity4
 		//                                            \                /                               
 		//                                             \-> activity3 -/
 
@@ -129,8 +133,23 @@ contract ProcessDefinitionTest {
 		(success, ) = address(pd).call(abi.encodeWithSignature(functionSigCreateTransition, activity1Id, activity3Id));
 		if (success)
 			return "Expected REVERT when attempting to overwrite existing outgoing transition on activity1";
-		// Event 1
-		pd.createIntermediateEvent(event1Id, BpmModel.EventType.TIMER_TIMESTAMP, BpmModel.IntermediateEventBehavior.CATCHING, "targetDate", "agreement", address(0));
+
+		// Intermediate Event 1
+		if (!address(pd).call(abi.encodeWithSignature(functionSigCreateIntermediateEvent, intermediateEvent1Id, uint8(BpmModel.EventType.TIMER_TIMESTAMP), uint8(BpmModel.IntermediateEventBehavior.CATCHING), bytes32("targetDate"), bytes32("agreement"), address(0))))
+			return "Valid call to create intermediate event 1 should succeed";
+		if (address(pd).call(abi.encodeWithSignature(functionSigCreateIntermediateEvent, intermediateEvent1Id, uint8(BpmModel.EventType.TIMER_TIMESTAMP), uint8(BpmModel.IntermediateEventBehavior.CATCHING), bytes32("targetDate"), bytes32("agreement"), address(0))))
+			return "Creating an intermediate event with the same ID should REVERT";
+
+		// Boundary Event 1
+		if (!address(pd).call(abi.encodeWithSignature(functionSigAddBoundaryEvent, activity2Id, boundaryEvent1Id, uint8(BpmModel.EventType.TIMER_TIMESTAMP), uint8(BpmModel.BoundaryEventBehavior.NON_INTERRUPTING), bytes32("targetDate"), bytes32("agreement"), address(0))))
+			return "Valid call to create boundary event 1 should succeed";
+		if (address(pd).call(abi.encodeWithSignature(functionSigAddBoundaryEvent, bytes32("fakeActivity"), bytes32("newBoundary2"), uint8(BpmModel.EventType.TIMER_TIMESTAMP), uint8(BpmModel.BoundaryEventBehavior.NON_INTERRUPTING), bytes32("targetDate"), bytes32("agreement"), address(0))))
+			return "Adding a boundary event to non-existent activity should REVERT";
+		if (address(pd).call(abi.encodeWithSignature(functionSigAddBoundaryEvent, gateway1Id, bytes32("newBoundary3"), uint8(BpmModel.EventType.TIMER_TIMESTAMP), uint8(BpmModel.BoundaryEventBehavior.NON_INTERRUPTING), bytes32("targetDate"), bytes32("agreement"), address(0))))
+			return "Adding a boundary event to a gateway should REVERT";
+		if (address(pd).call(abi.encodeWithSignature(functionSigAddBoundaryEvent, activity2Id, boundaryEvent1Id, uint8(BpmModel.EventType.TIMER_TIMESTAMP), uint8(BpmModel.BoundaryEventBehavior.NON_INTERRUPTING), bytes32("targetDate"), bytes32("agreement"), address(0))))
+			return "Creating a boundary event with the same ID should REVERT";
+
 		// Activity 4
 		error = pd.createActivityDefinition(activity4Id, BpmModel.ActivityType.TASK, BpmModel.TaskType.NONE, BpmModel.TaskBehavior.SEND, EMPTY, false, EMPTY, EMPTY, EMPTY);
 		if (error != BaseErrors.NO_ERROR()) return "Creating activity4 failed";
@@ -151,8 +170,8 @@ contract ProcessDefinitionTest {
 		pd.createTransition(activity2Id, gateway1Id);
 		pd.createTransition(gateway1Id, gateway2Id);
 		pd.createTransition(gateway1Id, activity3Id);
-		pd.createTransition(gateway2Id, event1Id);
-		pd.createTransition(event1Id, activity4Id);
+		pd.createTransition(gateway2Id, intermediateEvent1Id);
+		pd.createTransition(intermediateEvent1Id, activity4Id);
 
 		(valid, errorMsg) = pd.validate();
 		if (!valid) return errorMsg.toString(); // process definition should be valid at this point as transition conditions are not part of the validation
