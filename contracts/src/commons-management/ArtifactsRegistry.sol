@@ -10,8 +10,8 @@ import "commons-management/ArtifactsFinder.sol";
  */
 contract ArtifactsRegistry is ArtifactsFinder, SystemOwnerTransferable {
 
-    event LogArtifactCreation(bytes32 eventId, string artifactId, address artifactAddress, uint versionMajor, uint versionMinor, uint versionPatch, bool activeVersion);
-    event LogArtifactActivation(bytes32 eventId, string artifactId, address artifactAddress, bool activeVersion);
+    event LogArtifactCreation(bytes32 indexed eventId, string artifactId, address artifactAddress, uint versionMajor, uint versionMinor, uint versionPatch, bool activeVersion);
+    event LogArtifactActivation(bytes32 indexed eventId, string artifactId, address artifactAddress, bool activeVersion);
 
     bytes32 public constant EVENT_ID_ARTIFACTS = "AN://artifacts";
 
