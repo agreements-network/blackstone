@@ -70,7 +70,6 @@ library BpmRuntime {
     // Transitions create "activation tokens" and it's the responsibility of the place to signal it's readiness by setting a "completion token".
     // This supports the use of the places as state holders for BPM activities which generally require some form of processing before producing
     // a new token to activate an outgoing transition.
-    // TODO rename to ActivityNode
     struct ActivityNode {
         bool ready;
         bool done;

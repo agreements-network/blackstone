@@ -849,7 +849,6 @@ library BpmRuntimeLib {
      */
     function traverseRuntimeGraph(ProcessDefinition _processDefinition, bytes32 _currentId, BpmRuntime.ProcessGraph storage _graph) public {
         bytes32 targetId;
-        BpmModel.ModelElementType targetType;
         BpmModel.ModelElementType currentType = _processDefinition.getElementType(_currentId);
         // ACTIVITY
         if (currentType == BpmModel.ModelElementType.ACTIVITY) {
@@ -860,10 +859,9 @@ library BpmRuntimeLib {
             addActivity(_graph, _currentId);
             ( , targetId) = _processDefinition.getActivityGraphDetails(_currentId);
             if (targetId != "") {
-                targetType = _processDefinition.getElementType(targetId);
                 // continue recursion to the next element to ensure relevant nodes in the graph exist before adding the connections
                 traverseRuntimeGraph(_processDefinition, targetId, _graph);
-                connect(_graph, _currentId, currentType, targetId, targetType);
+                connect(_graph, _currentId, currentType, targetId, _processDefinition.getElementType(targetId));
             }
         }
         // GATEWAY
@@ -885,8 +883,7 @@ library BpmRuntimeLib {
                 targetId = outputs[i];
                 // continue recursion to the next element to ensure relevant nodes in the graph exist before adding the connections
                 traverseRuntimeGraph(_processDefinition, targetId, _graph);
-                targetType = _processDefinition.getElementType(targetId);
-                bytes32 newElementId = connect(_graph, _currentId, currentType, targetId, targetType);
+                bytes32 newElementId = connect(_graph, _currentId, currentType, targetId, _processDefinition.getElementType(targetId));
                 // If the ProcessDefinition defines the target of the just made connection to be the default, it needs to be set in the graph
                 // For the graph, however, the target can be the original target (=activity) or a newly inserted place (newElementId), if the PD's target is another gateway.
                 if (defaultOutput == targetId) {
