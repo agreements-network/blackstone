@@ -14,8 +14,8 @@ contract ProcessDefinitionTest {
 	string constant SUCCESS = "success";
 	string constant functionSigCreateTransition = "createTransition(bytes32,bytes32)";
 	string constant functionSigCreateTransitionConditionForAddress = "createTransitionConditionForAddress(bytes32,bytes32,bytes32,bytes32,address,uint8,address)";
-	string constant functionSigCreateIntermediateEvent = "createIntermediateEvent(bytes32,uint8,uint8,bytes32,bytes32,address)";
-	string constant functionSigAddBoundaryEvent = "addBoundaryEvent(bytes32,bytes32,uint8,uint8,bytes32,bytes32,address)";
+	string constant functionSigCreateIntermediateEvent = "createIntermediateEvent(bytes32,uint8,uint8,bytes32,bytes32,address,uint256)";
+	string constant functionSigAddBoundaryEvent = "addBoundaryEvent(bytes32,bytes32,uint8,uint8,bytes32,bytes32,address,uint256)";
 
 	// test data
 	bytes32 activity1Id = "activity1";
@@ -135,19 +135,19 @@ contract ProcessDefinitionTest {
 			return "Expected REVERT when attempting to overwrite existing outgoing transition on activity1";
 
 		// Intermediate Event 1
-		if (!address(pd).call(abi.encodeWithSignature(functionSigCreateIntermediateEvent, intermediateEvent1Id, uint8(BpmModel.EventType.TIMER_TIMESTAMP), uint8(BpmModel.IntermediateEventBehavior.CATCHING), bytes32("targetDate"), bytes32("agreement"), address(0))))
+		if (!address(pd).call(abi.encodeWithSignature(functionSigCreateIntermediateEvent, intermediateEvent1Id, uint8(BpmModel.EventType.TIMER_TIMESTAMP), uint8(BpmModel.IntermediateEventBehavior.CATCHING), bytes32("targetDate"), bytes32("agreement"), address(0), uint256(0))))
 			return "Valid call to create intermediate event 1 should succeed";
-		if (address(pd).call(abi.encodeWithSignature(functionSigCreateIntermediateEvent, intermediateEvent1Id, uint8(BpmModel.EventType.TIMER_TIMESTAMP), uint8(BpmModel.IntermediateEventBehavior.CATCHING), bytes32("targetDate"), bytes32("agreement"), address(0))))
+		if (address(pd).call(abi.encodeWithSignature(functionSigCreateIntermediateEvent, intermediateEvent1Id, uint8(BpmModel.EventType.TIMER_TIMESTAMP), uint8(BpmModel.IntermediateEventBehavior.CATCHING), bytes32("targetDate"), bytes32("agreement"), address(0), uint256(0))))
 			return "Creating an intermediate event with the same ID should REVERT";
 
 		// Boundary Event 1
-		if (!address(pd).call(abi.encodeWithSignature(functionSigAddBoundaryEvent, activity2Id, boundaryEvent1Id, uint8(BpmModel.EventType.TIMER_TIMESTAMP), uint8(BpmModel.BoundaryEventBehavior.NON_INTERRUPTING), bytes32("targetDate"), bytes32("agreement"), address(0))))
+		if (!address(pd).call(abi.encodeWithSignature(functionSigAddBoundaryEvent, activity2Id, boundaryEvent1Id, uint8(BpmModel.EventType.TIMER_TIMESTAMP), uint8(BpmModel.BoundaryEventBehavior.NON_INTERRUPTING), bytes32(""), bytes32(""), address(0), uint256(2323232678))))
 			return "Valid call to create boundary event 1 should succeed";
-		if (address(pd).call(abi.encodeWithSignature(functionSigAddBoundaryEvent, bytes32("fakeActivity"), bytes32("newBoundary2"), uint8(BpmModel.EventType.TIMER_TIMESTAMP), uint8(BpmModel.BoundaryEventBehavior.NON_INTERRUPTING), bytes32("targetDate"), bytes32("agreement"), address(0))))
+		if (address(pd).call(abi.encodeWithSignature(functionSigAddBoundaryEvent, bytes32("fakeActivity"), bytes32("newBoundary2"), uint8(BpmModel.EventType.TIMER_TIMESTAMP), uint8(BpmModel.BoundaryEventBehavior.NON_INTERRUPTING), bytes32("targetDate"), bytes32("agreement"), address(0), uint256(0))))
 			return "Adding a boundary event to non-existent activity should REVERT";
-		if (address(pd).call(abi.encodeWithSignature(functionSigAddBoundaryEvent, gateway1Id, bytes32("newBoundary3"), uint8(BpmModel.EventType.TIMER_TIMESTAMP), uint8(BpmModel.BoundaryEventBehavior.NON_INTERRUPTING), bytes32("targetDate"), bytes32("agreement"), address(0))))
+		if (address(pd).call(abi.encodeWithSignature(functionSigAddBoundaryEvent, gateway1Id, bytes32("newBoundary3"), uint8(BpmModel.EventType.TIMER_TIMESTAMP), uint8(BpmModel.BoundaryEventBehavior.NON_INTERRUPTING), bytes32("targetDate"), bytes32("agreement"), address(0), uint256(0))))
 			return "Adding a boundary event to a gateway should REVERT";
-		if (address(pd).call(abi.encodeWithSignature(functionSigAddBoundaryEvent, activity2Id, boundaryEvent1Id, uint8(BpmModel.EventType.TIMER_TIMESTAMP), uint8(BpmModel.BoundaryEventBehavior.NON_INTERRUPTING), bytes32("targetDate"), bytes32("agreement"), address(0))))
+		if (address(pd).call(abi.encodeWithSignature(functionSigAddBoundaryEvent, activity2Id, boundaryEvent1Id, uint8(BpmModel.EventType.TIMER_TIMESTAMP), uint8(BpmModel.BoundaryEventBehavior.NON_INTERRUPTING), bytes32("targetDate"), bytes32("agreement"), address(0), uint256(0))))
 			return "Creating a boundary event with the same ID should REVERT";
 
 		// Activity 4

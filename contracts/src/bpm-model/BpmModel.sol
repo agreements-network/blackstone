@@ -146,7 +146,6 @@ library BpmModel {
         BoundaryEventBehavior eventBehavior;
         DataStorageUtils.ConditionalData conditionalData;
         Primitive primitiveData;
-        bytes32 predecessor; // the predecessory for a boundary event would always be the associated activity ID
         bytes32 successor;
     }
 
