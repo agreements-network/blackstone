@@ -191,7 +191,8 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 	}
 
 	/**
-	 * Creates a new intermediate event definition with the specified parameters and conditional (DataStorage-based) data.
+	 * Creates a new intermediate event definition with the specified parameters and conditional (DataStorage-based) data
+	 * or constant uint value. If a constant value is provided, the conditional data will be ignored! 
 	 * REVERTS if:
 	 * - the ID already exists as a model element
 	 * @param _id the ID under which to register the element
@@ -200,8 +201,9 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 	 * @param _dataPath a data path (key) to use for data lookup on a DataStorage.
 	 * @param _dataStorageId an optional key to identify a DataStorage as basis for the data path other than the default one
 	 * @param _dataStorage an optional address of a DataStorage as basis for the data path other than the default one
+	 * @param _constantValue a fixed value for timer based events representing either a datetime or a duration in secs
 	 */
-	function createIntermediateEvent(bytes32 _id, BpmModel.EventType _eventType, BpmModel.IntermediateEventBehavior _eventBehavior, bytes32 _dataPath, bytes32 _dataStorageId, address _dataStorage)
+	function createIntermediateEvent(bytes32 _id, BpmModel.EventType _eventType, BpmModel.IntermediateEventBehavior _eventBehavior, bytes32 _dataPath, bytes32 _dataStorageId, address _dataStorage, uint256 _constantValue)
 		external
 		pre_invalidate
 	{
@@ -215,14 +217,20 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 			graphElements.rows[_id].intermediateEvent.eventBehavior = BpmModel.IntermediateEventBehavior.CATCHING;
 		else
 			graphElements.rows[_id].intermediateEvent.eventBehavior = _eventBehavior;
-		graphElements.rows[_id].intermediateEvent.conditionalData.dataPath = _dataPath;
-		graphElements.rows[_id].intermediateEvent.conditionalData.dataStorageId = _dataStorageId;
-		graphElements.rows[_id].intermediateEvent.conditionalData.dataStorage = _dataStorage;
+		if (_constantValue > 0) {
+			graphElements.rows[_id].intermediateEvent.primitiveData.uintValue = _constantValue;
+		}
+		else {
+			graphElements.rows[_id].intermediateEvent.conditionalData.dataPath = _dataPath;
+			graphElements.rows[_id].intermediateEvent.conditionalData.dataStorageId = _dataStorageId;
+			graphElements.rows[_id].intermediateEvent.conditionalData.dataStorage = _dataStorage;
+		}
 		graphElements.rows[_id].exists = true;
 	}
 
 	/**
-	 * @dev Addes a boundary event to the specified activity using the provided ID and parameters.
+	 * @dev Addes a boundary event to the specified activity using the provided ID, parameters, conditional (DataStorage-based)
+	 * data or constant uint value. If a constant value is provided, the conditional data will be ignored! 
 	 * REVERTS if:
 	 * - the activity does not exist
 	 * - the event ID already exists as a model element
@@ -233,8 +241,9 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 	 * @param _dataPath a data path (key) to use for data lookup on a DataStorage.
 	 * @param _dataStorageId an optional key to identify a DataStorage as basis for the data path other than the default one
 	 * @param _dataStorage an optional address of a DataStorage as basis for the data path other than the default one
+	 * @param _constantValue a fixed value for timer based events representing either a datetime or a duration in secs
 	 */
-	function addBoundaryEvent(bytes32 _activityId, bytes32 _id, BpmModel.EventType _eventType, BpmModel.BoundaryEventBehavior _eventBehavior, bytes32 _dataPath, bytes32 _dataStorageId, address _dataStorage)
+	function addBoundaryEvent(bytes32 _activityId, bytes32 _id, BpmModel.EventType _eventType, BpmModel.BoundaryEventBehavior _eventBehavior, bytes32 _dataPath, bytes32 _dataStorageId, address _dataStorage, uint256 _constantValue)
 		external
 		pre_invalidate
 	{
@@ -249,10 +258,14 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 		graphElements.rows[_id].boundaryEvent.id = _id;
 		graphElements.rows[_id].boundaryEvent.eventType = _eventType;
 		graphElements.rows[_id].boundaryEvent.eventBehavior = _eventBehavior;
-		graphElements.rows[_id].boundaryEvent.conditionalData.dataPath = _dataPath;
-		graphElements.rows[_id].boundaryEvent.conditionalData.dataStorageId = _dataStorageId;
-		graphElements.rows[_id].boundaryEvent.conditionalData.dataStorage = _dataStorage;
-		graphElements.rows[_id].boundaryEvent.predecessor = _activityId;
+		if (_constantValue > 0) {
+			graphElements.rows[_id].boundaryEvent.primitiveData.uintValue = _constantValue;
+		}
+		else {
+			graphElements.rows[_id].boundaryEvent.conditionalData.dataPath = _dataPath;
+			graphElements.rows[_id].boundaryEvent.conditionalData.dataStorageId = _dataStorageId;
+			graphElements.rows[_id].boundaryEvent.conditionalData.dataStorage = _dataStorage;
+		}
 		graphElements.rows[_activityId].activity.boundaryEventIds.push(_id);
 		graphElements.rows[_id].exists = true;
 	}
@@ -768,10 +781,12 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 	 * @param _id the ID of an activity
 	 * @return predecessor - the ID of its predecessor model element
 	 * @return successor - the ID of its successor model element
+	 * @return boundaryEventIds - the IDs of its boundary events, if any
 	 */
-	function getActivityGraphDetails(bytes32 _id) external view returns (bytes32 predecessor, bytes32 successor) {
+	function getActivityGraphDetails(bytes32 _id) external view returns (bytes32 predecessor, bytes32 successor, bytes32[] boundaryEventIds) {
 		predecessor = graphElements.rows[_id].activity.predecessor;
 		successor = graphElements.rows[_id].activity.successor;
+		boundaryEventIds = graphElements.rows[_id].activity.boundaryEventIds;
 	}
 
 	/**
