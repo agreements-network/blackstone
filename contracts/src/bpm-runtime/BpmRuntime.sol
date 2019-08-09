@@ -79,6 +79,8 @@ library BpmRuntime {
         Node node;
     }
 
+    // what do we need for an EventNode?? find out how intermediate + boundary behave at runtime to determine attributes
+
     // The Transition guides the implementation of different gateway types in the Petri net
     struct Transition {
         Node node;
