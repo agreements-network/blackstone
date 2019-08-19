@@ -30,12 +30,12 @@ services:
     - burrow
     - start
   vent:
-    # Pinning a dev image of burrow that contains the append-only event log feature in Vent
+    # Vent is using 0.28.0 while chain is still on 0.27.0 because of a Tendermint tx size issue
     build:
       context: .
       args:
-        BURROW_REPO: quay.io/monax/burrow
-        BURROW_VERSION: 0.27.0-dev-2019-08-02-fd379f4e
+        BURROW_REPO: hyperledger/burrow
+        BURROW_VERSION: "0.28.0"
     restart: always
     command:
     - burrow
