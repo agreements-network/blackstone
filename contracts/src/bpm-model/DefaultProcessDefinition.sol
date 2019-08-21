@@ -271,6 +271,35 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 	}
 
 	/**
+	 * @dev Adds an event action to a given boundary event.
+	 * @param _id the boundary event ID
+	 * @param _dataPath a data path (key) to use for data lookup on a DataStorage to find the escalation target
+	 * @param _dataStorageId an optional key to identify a DataStorage as basis for the data path to find the escalation target
+	 * @param _dataStorage an optional address of a DataStorage as basis for the data path to find the escalation target
+	 * @param _fixedTarget a fixed address for the escalation target
+	 * @param _actionFunction a function signature to be invoked on the escalation target
+	 */
+	function addBoundaryEventAction(bytes32 _id, bytes32 _dataPath, bytes32 _dataStorageId, address _dataStorage, address _fixedTarget, string _actionFunction)
+		external
+		pre_invalidate
+	{
+		ErrorsLib.revertIf(!(graphElements.rows[_id].exists && graphElements.rows[_id].elementType == BpmModel.ModelElementType.BOUNDARY_EVENT), 
+			ErrorsLib.INVALID_PARAMETER_STATE(), "DefaultProcessDefinition.addBoundaryEventAction", "Cannot add boundary event action since the given ID is either non-existent or not of the correct type BpmModel.ModelElementType.BOUNDARY_EVENT");
+		ErrorsLib.revertIf(_dataPath.isEmpty() && _fixedTarget == address(0), 
+			ErrorsLib.INVALID_INPUT(), "DefaultProcessDefinition.addBoundaryEventAction", "Either a ConditionalData (via a _dataPath at a minimum) or a _fixedEscalationTartget must be provided");
+		ErrorsLib.revertIf(bytes(_actionFunction).length == 0, 
+			ErrorsLib.NULL_PARAMETER_NOT_ALLOWED(), "DefaultProcessDefinition.addBoundaryEventAction", "Action function parameter must not be empty");
+		BpmModel.BoundaryEventAction memory action;
+		action.conditionalTarget.dataPath = _dataPath;
+		action.conditionalTarget.dataStorageId = _dataStorageId;
+		action.conditionalTarget.dataStorage = _dataStorage;
+		action.fixedTarget = _fixedTarget;
+		action.targetFunction = bytes4(keccak256(abi.encodePacked(_actionFunction)));
+		graphElements.rows[_id].boundaryEvent.actions.push(action);
+		
+	}
+
+	/**
 	 * @dev Creates a transition between the specified source and target objects.
 	 * REVERTS if:
 	 * - no element with the source ID exists
