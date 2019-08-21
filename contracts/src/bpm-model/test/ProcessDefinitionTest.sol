@@ -16,6 +16,8 @@ contract ProcessDefinitionTest {
 	string constant functionSigCreateTransitionConditionForAddress = "createTransitionConditionForAddress(bytes32,bytes32,bytes32,bytes32,address,uint8,address)";
 	string constant functionSigCreateIntermediateEvent = "createIntermediateEvent(bytes32,uint8,uint8,bytes32,bytes32,address,uint256)";
 	string constant functionSigAddBoundaryEvent = "addBoundaryEvent(bytes32,bytes32,uint8,uint8,bytes32,bytes32,address,uint256)";
+	string constant functionSigAddBoundaryEventAction = "addBoundaryEventAction(bytes32,bytes32,bytes32,address,address,string)";
+	string constant functionSigCancel = "cancel()";
 
 	// test data
 	bytes32 activity1Id = "activity1";
@@ -40,6 +42,7 @@ contract ProcessDefinitionTest {
 	bytes32 modelId;
 	string dummyModelFileReference = "{json grant}";
 	bytes32 EMPTY = "";
+	string constant EMPTY_STRING = "";
 
 	/**
 	 * @dev Tests building of the ProcessDefinition and checking for validity along the way
@@ -149,6 +152,14 @@ contract ProcessDefinitionTest {
 			return "Adding a boundary event to a gateway should REVERT";
 		if (address(pd).call(abi.encodeWithSignature(functionSigAddBoundaryEvent, activity2Id, boundaryEvent1Id, uint8(BpmModel.EventType.TIMER_TIMESTAMP), uint8(BpmModel.BoundaryEventBehavior.NON_INTERRUPTING), bytes32("targetDate"), bytes32("agreement"), address(0), uint256(0))))
 			return "Creating a boundary event with the same ID should REVERT";
+		if (!address(pd).call(abi.encodeWithSignature(functionSigAddBoundaryEventAction, boundaryEvent1Id, bytes32("agreement"), bytes32(""), address(0), address(0), functionSigCancel)))
+			return "Creating a valid boundary event action on event1 should succeed";
+		if (address(pd).call(abi.encodeWithSignature(functionSigAddBoundaryEventAction, bytes32("hubbabubba"), bytes32("agreement"), bytes32(""), address(0), address(0), functionSigCancel)))
+			return "Creating a boundary event action on a non-existant event ID should REVERT";
+		if (address(pd).call(abi.encodeWithSignature(functionSigAddBoundaryEventAction, boundaryEvent1Id, bytes32(""), bytes32(""), address(0), address(0), functionSigCancel)))
+			return "Creating an invalid boundary event action not leading to a target should REVERT";
+		if (address(pd).call(abi.encodeWithSignature(functionSigAddBoundaryEventAction, boundaryEvent1Id, bytes32("agreement"), bytes32(""), address(0), address(0), EMPTY_STRING)))
+			return "Creating a boundary event action with an empty action function should REVERT";
 
 		// Activity 4
 		error = pd.createActivityDefinition(activity4Id, BpmModel.ActivityType.TASK, BpmModel.TaskType.NONE, BpmModel.TaskBehavior.SEND, EMPTY, false, EMPTY, EMPTY, EMPTY);

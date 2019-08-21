@@ -147,6 +147,13 @@ library BpmModel {
         DataStorageUtils.ConditionalData conditionalData;
         Primitive primitiveData;
         bytes32 successor;
+        BoundaryEventAction[] actions;
+    }
+
+    struct BoundaryEventAction {
+        DataStorageUtils.ConditionalData conditionalTarget;
+        address fixedTarget;
+        bytes4 targetFunction;
     }
 
     /**
