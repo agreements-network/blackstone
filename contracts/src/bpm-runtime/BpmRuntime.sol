@@ -71,12 +71,12 @@ library BpmRuntime {
     // This supports the use of the places as state holders for BPM activities which generally require some form of processing before producing
     // a new token to activate an outgoing transition.
     struct ActivityNode {
+        Node node;
         bool ready;
         bool done;
         bool exists;
-        uint instancesTotal;
-        uint instancesCompleted;
-        Node node;
+        uint instancesTotal; // only used for tasks
+        uint instancesCompleted; // only used for tasks
     }
 
     // what do we need for an EventNode?? find out how intermediate + boundary behave at runtime to determine attributes

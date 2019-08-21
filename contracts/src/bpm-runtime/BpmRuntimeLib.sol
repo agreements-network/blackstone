@@ -878,9 +878,9 @@ library BpmRuntimeLib {
             if (_graph.activities[_currentId].exists) {
                 return; // if the element has already been added, end recursion
             }
-            // create a place for the current activity
+            // create a place for the current event
             addActivity(_graph, _currentId);
-            // process the activity successor, if there is one
+            // process the successor, if there is one
             if (targetId != "") {
                 targetType = _processDefinition.getElementType(targetId);
                 // continue recursion to the next element to ensure relevant nodes in the graph exist before adding the connections

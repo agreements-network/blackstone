@@ -158,6 +158,15 @@ contract DefaultProcessInstance is AbstractVersionedArtifact(1,0,0), AbstractDel
         notifyProcessStateChange();
     }
 
+    // both the following functions rely on an understanding of how to handle timer escalations
+    function triggerBoundaryEvent(bytes32 _activityInstanceId, bytes32 _eventId) external {
+
+    }
+
+    function triggerIntermediateEvent(bytes32 _eventId) external {
+
+    }
+
 	/**
 	 * @dev Completes the specified activity
 	 * @param _activityInstanceId the activity instance
