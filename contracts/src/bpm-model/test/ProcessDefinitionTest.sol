@@ -161,6 +161,11 @@ contract ProcessDefinitionTest {
 		if (address(pd).call(abi.encodeWithSignature(functionSigAddBoundaryEventAction, boundaryEvent1Id, bytes32("agreement"), bytes32(""), address(0), address(0), EMPTY_STRING)))
 			return "Creating a boundary event action with an empty action function should REVERT";
 
+		( , BpmModel.EventType eventType, BpmModel.BoundaryEventBehavior eventBehavior, bytes32 successor) = pd.getBoundaryEventGraphDetails(boundaryEvent1Id);
+		if (eventType != BpmModel.EventType.TIMER_TIMESTAMP) return "Retrieval of boundary event did not match event type";
+		if (eventBehavior != BpmModel.BoundaryEventBehavior.NON_INTERRUPTING) return "Retrieval of boundary event did not match event behavior";
+		if (successor != EMPTY) return "Retrieval of boundary event did not match successor";
+
 		// Activity 4
 		error = pd.createActivityDefinition(activity4Id, BpmModel.ActivityType.TASK, BpmModel.TaskType.NONE, BpmModel.TaskBehavior.SEND, EMPTY, false, EMPTY, EMPTY, EMPTY);
 		if (error != BaseErrors.NO_ERROR()) return "Creating activity4 failed";

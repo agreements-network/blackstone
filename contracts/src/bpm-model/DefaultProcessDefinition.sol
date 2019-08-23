@@ -833,6 +833,13 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 		defaultOutput = graphElements.rows[_id].gateway.defaultOutput;
 	}
 
+	function getBoundaryEventGraphDetails(bytes32 _id) external view returns (bytes32 id, BpmModel.EventType eventType, BpmModel.BoundaryEventBehavior eventBehavior, bytes32 successor) {
+		id = graphElements.rows[_id].boundaryEvent.id;
+		eventType = graphElements.rows[_id].boundaryEvent.eventType;
+		eventBehavior = graphElements.rows[_id].boundaryEvent.eventBehavior;
+		successor = graphElements.rows[_id].boundaryEvent.successor;
+	}
+
 	/**
 	 * @dev indicates whether this ProcessDefinition implements the specified interface
 	 * @param _model the model defining the interface

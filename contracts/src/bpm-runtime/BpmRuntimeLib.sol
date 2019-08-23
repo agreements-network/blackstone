@@ -2,10 +2,6 @@ pragma solidity ^0.5.12;
 
 import "commons-base/ErrorsLib.sol";
 import "commons-base/BaseErrors.sol";
-import "commons-utils/TypeUtilsLib.sol";
-import "commons-utils/ArrayUtilsLib.sol";
-import "commons-collections/Mappings.sol";
-import "commons-collections/MappingsLib.sol";
 import "commons-standards/ERC165Utils.sol";
 import "commons-auth/Organization.sol";
 import "bpm-model/BpmModel.sol";
@@ -862,8 +858,17 @@ library BpmRuntimeLib {
             addActivity(_graph, _currentId);
             ( , targetId, elementIds) = _processDefinition.getActivityGraphDetails(_currentId);
             // process the activity's boundary events
+
+            //TODO need to implement mechanism to guarantee that the first output slot of an ActivityNode is always reserved for any next activities. Any transitions to paths resulting from events should be restricted to slots > 1
+
             for (i=0; i<elementIds.length; i++) {
-                traverseRuntimeGraph(_processDefinition, elementIds[i], _graph);
+                // if there is an activity path connected to the boundary event, we follow it
+                ( , , , bytes32 successor) = _processDefinition.getBoundaryEventGraphDetails(elementIds[i]);
+                if (successor != "") {
+                    targetType = _processDefinition.getElementType(successor);
+                    traverseRuntimeGraph(_processDefinition, successor, _graph);
+                    connect(_graph, _currentId, currentType, successor, targetType);
+                }
             }
             // process the activity successor, if there is one
             if (targetId != "") {
@@ -1008,7 +1013,6 @@ library BpmRuntimeLib {
      * @param _b the target node
      */
     function connect(BpmRuntime.Node storage _a, BpmRuntime.Node storage _b) private {
-        // TODO there is currently no protection from accidentally adding the same connection multiple times. We should implement .contains() checks or refactor the inputs/outputs to a mapping to prevent duplicate connections.
         _a.outputs.push(_b.id);
         _b.inputs.push(_a.id);
     }
