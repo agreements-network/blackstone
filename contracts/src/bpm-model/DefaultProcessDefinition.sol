@@ -236,7 +236,7 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 	 * - the event ID already exists as a model element
 	 * @param _activityId the activity for which the boundary event is added
 	 * @param _id the ID under which to register the element
-	 * @param _eventType a BpmModel.EventType. Note that TIMER_TIMESTAMP and TIMER_DURATION event types enforce CATCHING behavior.
+	 * @param _eventType a BpmModel.EventType.
 	 * @param _eventBehavior a BpmModel.IntermediateEventBehavior
 	 * @param _dataPath a data path (key) to use for data lookup on a DataStorage.
 	 * @param _dataStorageId an optional key to identify a DataStorage as basis for the data path other than the default one
