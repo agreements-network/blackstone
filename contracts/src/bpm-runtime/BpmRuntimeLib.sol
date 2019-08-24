@@ -2,6 +2,7 @@ pragma solidity ^0.5.12;
 
 import "commons-base/ErrorsLib.sol";
 import "commons-base/BaseErrors.sol";
+import "commons-utils/TypeUtilsLib.sol";
 import "commons-standards/ERC165Utils.sol";
 import "commons-auth/Organization.sol";
 import "bpm-model/BpmModel.sol";
@@ -20,6 +21,8 @@ import "bpm-runtime/TransitionConditionResolver.sol";
  */
 library BpmRuntimeLib {
 
+    using TypeUtilsLib for bytes32;
+    
     // NOTE: some of the following event definitions are duplicates of events defined in ProcessInstance.sol
 
 	event LogProcessInstanceStateUpdate(
@@ -857,25 +860,22 @@ library BpmRuntimeLib {
             // create a place for the current activity
             addActivity(_graph, _currentId);
             ( , targetId, elementIds) = _processDefinition.getActivityGraphDetails(_currentId);
-            // process the activity's boundary events
-
-            //TODO need to implement mechanism to guarantee that the first output slot of an ActivityNode is always reserved for any next activities. Any transitions to paths resulting from events should be restricted to slots > 1
-
-            for (i=0; i<elementIds.length; i++) {
-                // if there is an activity path connected to the boundary event, we follow it
-                ( , , , bytes32 successor) = _processDefinition.getBoundaryEventGraphDetails(elementIds[i]);
-                if (successor != "") {
-                    targetType = _processDefinition.getElementType(successor);
-                    traverseRuntimeGraph(_processDefinition, successor, _graph);
-                    connect(_graph, _currentId, currentType, successor, targetType);
-                }
-            }
             // process the activity successor, if there is one
             if (targetId != "") {
                 targetType = _processDefinition.getElementType(targetId);
                 // continue recursion to the next element to ensure relevant nodes in the graph exist before adding the connections
                 traverseRuntimeGraph(_processDefinition, targetId, _graph);
-                connect(_graph, _currentId, currentType, targetId, targetType);
+                connect(_graph, _currentId, currentType, targetId, targetType, "");
+            }
+            // process the activity's boundary events
+            for (i=0; i<elementIds.length; i++) {
+                // if there is an activity path connected to the boundary event, we follow it
+                ( , , , targetId) = _processDefinition.getBoundaryEventGraphDetails(elementIds[i]);
+                if (targetId != "") {
+                    targetType = _processDefinition.getElementType(targetId);
+                    traverseRuntimeGraph(_processDefinition, targetId, _graph);
+                    connect(_graph, _currentId, currentType, targetId, targetType, elementIds[i]); // use reserved colored slots for boundary event transitions
+                }
             }
         }
         // INTERMEDIATE EVENT
@@ -890,7 +890,7 @@ library BpmRuntimeLib {
                 targetType = _processDefinition.getElementType(targetId);
                 // continue recursion to the next element to ensure relevant nodes in the graph exist before adding the connections
                 traverseRuntimeGraph(_processDefinition, targetId, _graph);
-                connect(_graph, _currentId, currentType, targetId, targetType);
+                connect(_graph, _currentId, currentType, targetId, targetType, "");
             }
         }
         // GATEWAY
@@ -913,7 +913,7 @@ library BpmRuntimeLib {
                 targetType = _processDefinition.getElementType(targetId);
                 // continue recursion to the next element to ensure relevant nodes in the graph exist before adding the connections
                 traverseRuntimeGraph(_processDefinition, targetId, _graph);
-                bytes32 newElementId = connect(_graph, _currentId, currentType, targetId, targetType);
+                bytes32 newElementId = connect(_graph, _currentId, currentType, targetId, targetType, "");
                 // If the ProcessDefinition defines the target of the just made connection to be the default, it needs to be set in the graph
                 // For the graph, however, the target can be the original target (=activity) or a newly inserted place (newElementId), if the PD's target is another gateway.
                 if (defaultOutput == targetId) {
@@ -929,13 +929,15 @@ library BpmRuntimeLib {
      * the following combinations require the generation of additional objects:
      * - activity -> activity: automatically generates a new NONE transition with two arcs to connect the activities
      * - gateway -> gateway: automatically generates a new artificial activity to connect the transitions
+     * Note that for activity (place) graph elements the outputs[] 0-index is always used for connections along the main graph and indexes > 0 are used for (colored) marked paths
+     * used for boundary events.
      * @param _graph a BpmRuntime.ProcessGraph
      * @param _sourceId the ID of the source object
      * @param _sourceType the BpmModel.ModelElementType of the source object
      * @param _targetId the ID of the target object
      * @param _targetType the BpmModel.ModelElementType of the target object
      */
-    function connect(BpmRuntime.ProcessGraph storage _graph, bytes32 _sourceId, BpmModel.ModelElementType _sourceType, bytes32 _targetId, BpmModel.ModelElementType _targetType)
+    function connect(BpmRuntime.ProcessGraph storage _graph, bytes32 _sourceId, BpmModel.ModelElementType _sourceType, bytes32 _targetId, BpmModel.ModelElementType _targetType, bytes32 _sourceMarker)
         public
         returns (bytes32 newElementId)
     {
@@ -945,10 +947,26 @@ library BpmRuntimeLib {
             // so, a NONE transition is put between the two transitions
             newElementId = keccak256(abi.encodePacked(_sourceId, _targetId));
             addTransition(_graph, newElementId, BpmRuntime.TransitionType.NONE);
+            // handle "colored" (marked) source activity outputs
+            if (!_sourceMarker.isEmpty()) {
+                _graph.transitions[newElementId].marker = _sourceMarker;
+                // for colored paths, make sure we don't use the 0-index
+                if (_graph.activities[_sourceId].node.outputs.length == 0) {
+                    _graph.activities[_sourceId].node.outputs.length++;
+                }
+            }
             connect(_graph.activities[_sourceId].node, _graph.transitions[newElementId].node); // input arc
             connect(_graph.transitions[newElementId].node, _graph.activities[_targetId].node); // output arc
         }
         else if (_sourceType == BpmModel.ModelElementType.ACTIVITY) {
+            // handle "colored" (marked) source activity outputs
+            if (!_sourceMarker.isEmpty()) {
+                _graph.transitions[_targetId].marker = _sourceMarker;
+                // for colored paths, make sure we don't use the 0-index
+                if(_graph.activities[_sourceId].node.outputs.length == 0) {
+                    _graph.activities[_sourceId].node.outputs.length++;
+                }
+            }
             connect(_graph.activities[_sourceId].node, _graph.transitions[_targetId].node);
         }
         else if (_targetType == BpmModel.ModelElementType.ACTIVITY) {
@@ -1024,18 +1042,25 @@ library BpmRuntimeLib {
      * @param _transitionId the transition to fire
      * @return true if the transition was fired, false otherwise
      */
-    function fireTransition(BpmRuntime.ProcessGraph storage _graph, bytes32 _transitionId) private returns (bool) {
-        // make sure all inputs are loaded. This could also be a modifier!
+    function fireTransition(BpmRuntime.ProcessGraph storage _graph, bytes32 _transitionId)
+        private
+        returns (bool)
+    {
         if (isTransitionEnabled(_graph, _transitionId)) {
             uint i;
+            bytes32 marker = _graph.transitions[_transitionId].marker;
+            bool coloredTransition = !marker.isEmpty();
             // NONE and AND transition types behave the same way: all tokens from incoming arcs are consumed and
             // all outgoing arcs are fired
             if (_graph.transitions[_transitionId].transitionType == BpmRuntime.TransitionType.NONE ||
                 _graph.transitions[_transitionId].transitionType == BpmRuntime.TransitionType.AND) {
 
-                // consume all "done" tokens from input arcs
+                // consume all "done" or colored tokens from input arcs
                 for (i=0; i<_graph.transitions[_transitionId].node.inputs.length; i++) {
-                    _graph.activities[_graph.transitions[_transitionId].node.inputs[i]].done = false;
+                    if (coloredTransition)
+                        _graph.activities[_graph.transitions[_transitionId].node.inputs[i]].markers[marker] = false;
+                    else
+                        _graph.activities[_graph.transitions[_transitionId].node.inputs[i]].done = false;
                 }
                 // and produce "ready" tokens on all ouput arcs
                 for (i=0; i<_graph.transitions[_transitionId].node.outputs.length; i++) {
@@ -1044,9 +1069,13 @@ library BpmRuntimeLib {
             }
             else if (_graph.transitions[_transitionId].transitionType == BpmRuntime.TransitionType.XOR) {
                 bool transitionFired;
-                // consume a single "done" token from input arcs
+                // consume a single "done" or colored token from input arcs
                 for (i=0; i<_graph.transitions[_transitionId].node.inputs.length; i++) {
-                    if (_graph.activities[_graph.transitions[_transitionId].node.inputs[i]].done) {
+                    if (coloredTransition && _graph.activities[_graph.transitions[_transitionId].node.inputs[i]].markers[marker]) {
+                        _graph.activities[_graph.transitions[_transitionId].node.inputs[i]].markers[marker] = false;
+                        break;
+                    }
+                    else if (!coloredTransition && _graph.activities[_graph.transitions[_transitionId].node.inputs[i]].done) {
                         _graph.activities[_graph.transitions[_transitionId].node.inputs[i]].done = false;
                         break;
                     }
@@ -1125,19 +1154,26 @@ library BpmRuntimeLib {
 
     /**
      * @dev Determines whether the conditions are met to fire the provided transition.
+     * If the transition is "colored" (has a specific marker), the marker's activation token on the transition's preceding activities are used to determine enabled status, otherwise the "done" token is used.
      * @param _graph the process runtime graph containing the transition
      * @param _transitionId the ID specifying the transition
      * @return true if the transitions can fire, false otherwise
      */
-    function isTransitionEnabled(BpmRuntime.ProcessGraph storage _graph, bytes32 _transitionId) public view returns (bool) {
-        require(_graph.transitions[_transitionId].exists);
+    function isTransitionEnabled(BpmRuntime.ProcessGraph storage _graph, bytes32 _transitionId) public view returns (bool enabled) {
+        ErrorsLib.revertIf(!_graph.transitions[_transitionId].exists,
+            ErrorsLib.RESOURCE_NOT_FOUND(), "BpmRuntimeLib.isTransitionEnabled", "A transition with the specified ID does not exist in the given graph");
         uint i;
+        bytes32 marker = _graph.transitions[_transitionId].marker;
+        bool coloredTransition = !marker.isEmpty();
+
         // AND and NONE transitions behave the same way: all incoming arcs must be activated to fire the transition
         if (_graph.transitions[_transitionId].transitionType == BpmRuntime.TransitionType.NONE ||
             _graph.transitions[_transitionId].transitionType == BpmRuntime.TransitionType.AND) {
             for (i=0; i<_graph.transitions[_transitionId].node.inputs.length; i++) {
-                if (!_graph.activities[_graph.transitions[_transitionId].node.inputs[i]].done) {
-                    return false;
+                enabled = coloredTransition ?
+                    _graph.activities[_graph.transitions[_transitionId].node.inputs[i]].markers[marker] : _graph.activities[_graph.transitions[_transitionId].node.inputs[i]].done;
+                if (!enabled) {
+                    return enabled;
                 }
             }
             return true;
@@ -1145,12 +1181,13 @@ library BpmRuntimeLib {
         // XOR transitions require only a incoming arc to be activated in order to fire the transition
         else if (_graph.transitions[_transitionId].transitionType == BpmRuntime.TransitionType.XOR) {
             for (i=0; i<_graph.transitions[_transitionId].node.inputs.length; i++) {
-                if (_graph.activities[_graph.transitions[_transitionId].node.inputs[i]].done) {
-                    return true;
+                enabled = coloredTransition ?
+                    _graph.activities[_graph.transitions[_transitionId].node.inputs[i]].markers[marker] : _graph.activities[_graph.transitions[_transitionId].node.inputs[i]].done;
+                if (enabled) {
+                    return enabled;
                 }
             }
         }
-
         return false;
     }
 

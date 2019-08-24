@@ -166,6 +166,18 @@ jobs:
     relation: eq
     val: success
 
+- name: testProcessGraphColoredPaths
+  call:
+    destination: $BpmServiceTest
+    bin: BpmServiceTest
+    function: testProcessGraphColoredPaths
+
+- name: assertProcessGraphColoredPaths
+  assert:
+    key: $testProcessGraphColoredPaths
+    relation: eq
+    val: success
+
 - name: testProcessGraphParallelGateway
   call:
     destination: $BpmServiceTest
