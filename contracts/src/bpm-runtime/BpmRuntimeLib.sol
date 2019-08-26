@@ -929,13 +929,14 @@ library BpmRuntimeLib {
      * the following combinations require the generation of additional objects:
      * - activity -> activity: automatically generates a new NONE transition with two arcs to connect the activities
      * - gateway -> gateway: automatically generates a new artificial activity to connect the transitions
-     * Note that for activity (place) graph elements the outputs[] 0-index is always used for connections along the main graph and indexes > 0 are used for (colored) marked paths
-     * used for boundary events.
+     * Note that regular and 'marked' transitions can be added to the outputs of an Activity in any order. It is not enforced how many transitions of any kind an Activity
+     * can contain, but rather up to the algorithm creating the graph to build what is needed (see #traverseRuntimeGraph)
      * @param _graph a BpmRuntime.ProcessGraph
      * @param _sourceId the ID of the source object
      * @param _sourceType the BpmModel.ModelElementType of the source object
      * @param _targetId the ID of the target object
      * @param _targetType the BpmModel.ModelElementType of the target object
+     * @param _sourceMarker an optional key which causes outputs of an activity to be marked (colored) and any involved transitions to only fire if the marker is activated
      */
     function connect(BpmRuntime.ProcessGraph storage _graph, bytes32 _sourceId, BpmModel.ModelElementType _sourceType, bytes32 _targetId, BpmModel.ModelElementType _targetType, bytes32 _sourceMarker)
         public
@@ -950,10 +951,6 @@ library BpmRuntimeLib {
             // handle "colored" (marked) source activity outputs
             if (!_sourceMarker.isEmpty()) {
                 _graph.transitions[newElementId].marker = _sourceMarker;
-                // for colored paths, make sure we don't use the 0-index
-                if (_graph.activities[_sourceId].node.outputs.length == 0) {
-                    _graph.activities[_sourceId].node.outputs.length++;
-                }
             }
             connect(_graph.activities[_sourceId].node, _graph.transitions[newElementId].node); // input arc
             connect(_graph.transitions[newElementId].node, _graph.activities[_targetId].node); // output arc
@@ -962,10 +959,6 @@ library BpmRuntimeLib {
             // handle "colored" (marked) source activity outputs
             if (!_sourceMarker.isEmpty()) {
                 _graph.transitions[_targetId].marker = _sourceMarker;
-                // for colored paths, make sure we don't use the 0-index
-                if(_graph.activities[_sourceId].node.outputs.length == 0) {
-                    _graph.activities[_sourceId].node.outputs.length++;
-                }
             }
             connect(_graph.activities[_sourceId].node, _graph.transitions[_targetId].node);
         }
