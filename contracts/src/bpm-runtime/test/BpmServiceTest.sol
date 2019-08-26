@@ -232,7 +232,7 @@ contract BpmServiceTest {
 		if (graph.transitions[graph.transitionKeys[0]].node.inputs.length != 1) return "transition1 should have 1 in arcs";
 		if (graph.transitions[graph.transitionKeys[0]].node.outputs.length != 1) return "transition1 should have 1 out arcs";
 		if (graph.activities[activityId2].node.inputs.length != 1) return "activity2 should have 1 in arcs";
-		if (graph.activities[activityId2].node.outputs.length != 2) return "activity2 should have 1 out arcs with the 0-index empty and index 1 colored";
+		if (graph.activities[activityId2].node.outputs.length != 1) return "activity2 should have 1 out arc for the colored transition";
 		if (graph.transitions[graph.transitionKeys[1]].node.inputs.length != 1) return "transition2 should have 1 in arcs";
 		if (graph.transitions[graph.transitionKeys[1]].node.outputs.length != 1) return "transition2 should have 1 out arcs";
 		if (graph.activities[activityId3].node.inputs.length != 1) return "activity3 should have 1 in arcs";
@@ -244,8 +244,7 @@ contract BpmServiceTest {
 		// check correct colored indexing
 		if (graph.activities[activityId1].node.outputs[0] != graph.activities[activityId2].node.inputs[0]) return "ouputs[0] of activity1 should be the transition to activity2";
 		if (graph.activities[activityId1].node.outputs[1] != graph.activities[activityId3].node.inputs[0]) return "ouputs[1] of activity1 should be the transition to activity3";
-		if (graph.activities[activityId2].node.outputs[0] != "") return "ouputs[0] of activity2 should be empty";
-		if (graph.activities[activityId2].node.outputs[1] != graph.activities[activityId4].node.inputs[0]) return "ouputs[1] of activity2 should be the transition to activity4";
+		if (graph.activities[activityId2].node.outputs[0] != graph.activities[activityId4].node.inputs[0]) return "ouputs[0] of activity2 should be the transition to activity4";
 		if (graph.transitions[coloredTransition1Id].marker != marker1) return "ColoredTransition1 should have marker1";
 		if (graph.transitions[coloredTransition2Id].marker != marker2) return "ColoredTransition2 should have marker2";
 
