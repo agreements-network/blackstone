@@ -1,8 +1,5 @@
 const boom = require('@hapi/boom');
-const {
-  format,
-  asyncMiddleware,
-} = require(`${global.__common}/controller-dependencies`);
+const { format, asyncMiddleware } = require('../common/controller-dependencies');
 const sqlCache = require('./postgres-query-helper');
 
 module.exports = {

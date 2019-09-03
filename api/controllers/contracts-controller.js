@@ -9,6 +9,7 @@ const burrowApp = require(`${global.__common}/burrow-app`);
 const {
   DATA_TYPES,
   ERROR_CODES: ERR,
+  BPM_TIMER_EVENT_TYPES,
 } = global.__constants;
 
 const NO_TRANSACTION_RESPONSE_ERR = 'No transaction response raw data received from burrow';
@@ -1119,6 +1120,96 @@ const createTransitionCondition = (processAddress, dataType, gatewayId, activity
   });
 });
 
+const addBoundaryEvent = (pdAddress, {
+  attachedTo, id, eventType, eventBehavior, conditionalValue = {}, fixedValue,
+}) => new Promise((resolve, reject) => {
+  log.info('REQUEST: Add boundary event with data: %s', JSON.stringify({
+    pdAddress,
+    attachedTo,
+    id,
+    eventType,
+    eventBehavior,
+    conditionalValue,
+    fixedValue,
+  }));
+  const processDefinition = getContract(global.__abi, global.__bundles.BPM_MODEL.contracts.PROCESS_DEFINITION, pdAddress);
+  processDefinition.addBoundaryEvent(
+    global.stringToHex(attachedTo),
+    global.stringToHex(id),
+    eventType,
+    eventBehavior,
+    global.stringToHex(conditionalValue.dataPath || ''),
+    global.stringToHex(conditionalValue.dataStorageId || ''),
+    conditionalValue.dataStorage || '',
+    eventType === BPM_TIMER_EVENT_TYPES.timeDate && fixedValue ? fixedValue : 0,
+    eventType === BPM_TIMER_EVENT_TYPES.timeDuration && fixedValue ? fixedValue : '',
+    (error) => {
+      if (error) return reject(boomify(error, `Failed to add boundary event ${id} to process definition ${pdAddress}`));
+      log.info(`SUCCESS: Added boundary event ${id} to process definition ${pdAddress}`);
+      return resolve();
+    },
+  );
+});
+
+const addBoundaryEventAction = (pdAddress, {
+  id, escalationAction: {
+    dataPath, dataStorageId = '', dataStorage = '', fixedTarget = '', targetFunction,
+  },
+}) => new Promise((resolve, reject) => {
+  log.debug('REQUEST: Add boundary event action with data: %s', JSON.stringify({
+    pdAddress,
+    id,
+    dataPath,
+    dataStorageId,
+    dataStorage,
+    fixedTarget,
+    targetFunction,
+  }));
+  const processDefinition = getContract(global.__abi, global.__bundles.BPM_MODEL.contracts.PROCESS_DEFINITION, pdAddress);
+  processDefinition.addBoundaryEventAction(
+    global.stringToHex(id),
+    global.stringToHex(dataPath),
+    global.stringToHex(dataStorageId),
+    dataStorage,
+    fixedTarget,
+    targetFunction,
+    (error) => {
+      if (error) return reject(boomify(error, `Failed to add boundary event action for event ${id} to process definition ${pdAddress}`));
+      log.info(`SUCCESS: Added boundary event action for event ${id} to process definition ${pdAddress}`);
+      return resolve();
+    },
+  );
+});
+
+const createIntermediateEvent = (pdAddress, {
+  id, eventType, eventBehavior, conditionalValue = {}, fixedValue,
+}) => new Promise((resolve, reject) => {
+  log.debug('REQUEST: Add intermediate catch event with data: %s', JSON.stringify({
+    pdAddress,
+    id,
+    eventType,
+    eventBehavior,
+    conditionalValue,
+    fixedValue,
+  }));
+  const processDefinition = getContract(global.__abi, global.__bundles.BPM_MODEL.contracts.PROCESS_DEFINITION, pdAddress);
+  processDefinition.createIntermediateEvent(
+    global.stringToHex(id),
+    eventType,
+    eventBehavior,
+    global.stringToHex(conditionalValue.dataPath || ''),
+    global.stringToHex(conditionalValue.dataStorageId || ''),
+    conditionalValue.dataStorage || '',
+    eventType === BPM_TIMER_EVENT_TYPES.timeDate && fixedValue ? fixedValue : 0,
+    eventType === BPM_TIMER_EVENT_TYPES.timeDuration && fixedValue ? fixedValue : '',
+    (error) => {
+      if (error) return reject(boomify(error, `Failed to add intermediate catch event ${id} to process definition ${pdAddress}`));
+      log.info(`SUCCESS: Added intermediate catch event ${id} to process definition ${pdAddress}`);
+      return resolve();
+    },
+  );
+});
+
 const signAgreement = (actingUserAddress, agreementAddress) => new Promise(async (resolve, reject) => {
   log.debug('REQUEST: Sign agreement %s by user %s', agreementAddress, actingUserAddress);
   try {
@@ -1486,6 +1577,9 @@ module.exports = {
   createTransition,
   setDefaultTransition,
   createTransitionCondition,
+  addBoundaryEvent,
+  addBoundaryEventAction,
+  createIntermediateEvent,
   completeActivity,
   signAgreement,
   getModelAddressFromId,

@@ -2,7 +2,7 @@ const path = require('path');
 const boom = require('@hapi/boom');
 const Joi = require('@hapi/joi');
 const _ = require('lodash');
-
+const { parse, toSeconds } = require('iso8601-duration');
 const {
   format,
   splitMeta,
@@ -406,6 +406,17 @@ const validateAgreementParameterValue = (param) => {
       throw err;
     }
     param.value = Math.round(param.value);
+  } else if (param.type === PARAM_TYPE.DURATION) {
+    if (typeof param.value !== 'string') {
+      err.message = 'Duration must be a string';
+      throw err;
+    } else {
+      const asSeconds = toSeconds(parse(param.value));
+      if (!asSeconds) {
+        err.message = 'Duration must be greater than 0s. Check if format meets ISO-8601 standard.';
+        throw err;
+      }
+    }
   }
   return param;
   /* eslint-enable no-param-reassign */

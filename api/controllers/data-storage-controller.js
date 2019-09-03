@@ -320,6 +320,7 @@ agreementDataSetters[`${PARAM_TYPE.BYTES32}`] = setDataValueAsBytes32;
 agreementDataSetters[`${PARAM_TYPE.DOCUMENT}`] = setDataValueAsString;
 agreementDataSetters[`${PARAM_TYPE.LARGE_TEXT}`] = setDataValueAsString;
 agreementDataSetters[`${PARAM_TYPE.POSITIVE_NUMBER}`] = setDataValueAsUint;
+agreementDataSetters[`${PARAM_TYPE.DURATION}`] = setDataValueAsString;
 
 agreementDataGetters[`${PARAM_TYPE.BOOLEAN}`] = getDataValueAsBool;
 agreementDataGetters[`${PARAM_TYPE.STRING}`] = getDataValueAsString;
@@ -334,6 +335,7 @@ agreementDataGetters[`${PARAM_TYPE.BYTES32}`] = getDataValueAsBytes32;
 agreementDataGetters[`${PARAM_TYPE.DOCUMENT}`] = getDataValueAsString;
 agreementDataGetters[`${PARAM_TYPE.LARGE_TEXT}`] = getDataValueAsString;
 agreementDataGetters[`${PARAM_TYPE.POSITIVE_NUMBER}`] = getDataValueAsUint;
+agreementDataGetters[`${PARAM_TYPE.DURATION}`] = getDataValueAsString;
 
 activityInDataGetters[`${DATA_TYPES.BOOLEAN}`] = getActivityInDataAsBool;
 activityInDataGetters[`${DATA_TYPES.STRING}`] = getActivityInDataAsString;

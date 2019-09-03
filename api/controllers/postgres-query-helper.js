@@ -72,9 +72,9 @@ const QUERIES = {
 
   getCurrencyByAlpha3Code: `SELECT alpha3, m49, name FROM ${chainDb}.currencies WHERE alpha3 = $1`,
 
-  getParameterType: `SELECT CAST(parameter_type AS INTEGER) AS "parameterType", label FROM ${chainDb}.parameter_types WHERE parameter_type = $1`,
+  getParameterType: `SELECT id AS "parameterType" FROM ${appDb}.parameter_types WHERE parameter_type = $1`,
 
-  getParameterTypes: `SELECT CAST(parameter_type AS INTEGER) AS "parameterType", label FROM ${chainDb}.parameter_types`,
+  getParameterTypes: `SELECT id AS "parameterType" FROM ${appDb}.parameter_types`,
 
   getArchetypeData: `
     WITH membered AS (
@@ -128,9 +128,9 @@ const QUERIES = {
       (a.is_private = FALSE AND a.active = TRUE) OR (a.owner = $2 OR a.owner IN (SELECT * FROM membered))
     );`,
 
-  getArchetypeParameters: `SELECT ap.parameter_name AS name, ap.parameter_type AS type, pt.label AS label 
+  getArchetypeParameters: `SELECT ap.parameter_name AS name, ap.parameter_type AS type
     FROM ${chainDb}.archetype_parameters ap
-    JOIN ${chainDb}.parameter_types pt on ap.parameter_type = pt.parameter_type WHERE archetype_address = $1
+    WHERE archetype_address = $1
     ORDER BY ap.position`,
 
   getArchetypeJurisdictionsAll: `SELECT DISTINCT archetype_address AS address, country FROM ${chainDb}.archetype_jurisdictions`,
