@@ -450,6 +450,23 @@ const addBpmnFlowElements = ({
       .badImplementation(`Failed to create BPMN activities and/or data-mappings in process at ${pdAddress}: ${err.stack}`)));
 };
 
+const addTimerBoundaryEvents = (pdAddress, boundaryEvents) => {
+  const promises = boundaryEvents.map(boundaryEvent => contracts.addBoundaryEvent(pdAddress, boundaryEvent));
+  return Promise.all(promises);
+};
+
+const addTimerBoundaryEventEscalationActions = (pdAddress, boundaryEvents) => {
+  const promises = boundaryEvents
+    .filter(({ escalationAction }) => escalationAction)
+    .map(boundaryEvent => contracts.addBoundaryEventAction(pdAddress, boundaryEvent));
+  return Promise.all(promises);
+};
+
+const addTimerIntermediateCatchEvents = (pdAddress, intermediateCatchEvents) => {
+  const promises = intermediateCatchEvents.map(intCatchEvent => contracts.createIntermediateEvent(pdAddress, intCatchEvent));
+  return Promise.all(promises);
+};
+
 const addParticipantsFromBpmn = (pmAddress, participants) => new Promise((resolve, reject) => {
   const promises = participants.map((participant) => {
     if (Object.prototype.hasOwnProperty.call(participant, 'account') &&
@@ -493,6 +510,9 @@ const addProcessToModel = (modelId, modelAddress, pd) => new Promise(async (reso
     await addBpmnFlowElements(proc, pd.subProcesses);
     await addBpmnFlowElements(proc, pd.sendTasks);
     await addBpmnFlowElements(proc, pd.serviceTasks);
+    await addTimerBoundaryEvents(proc.address, pd.boundaryEvents);
+    await addTimerBoundaryEventEscalationActions(proc.address, pd.boundaryEvents);
+    await addTimerIntermediateCatchEvents(proc.address, pd.intermediateCatchEvents);
     await addBpmnGateways(proc.address, pd.xorGateways);
     await addBpmnGateways(proc.address, pd.andGateways);
     await addTransitionsFromBpmn(proc.address, pd.transitions);

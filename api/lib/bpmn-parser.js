@@ -3,6 +3,8 @@ const esmRequire = require('esm')(module);
 const BpmnModdle = esmRequire('bpmn-moddle').default;
 const moddle = new BpmnModdle();
 const boom = esmRequire('@hapi/boom');
+const moment = require('moment');
+const { COMPARISON_OPERATOR, PARAM_TYPE_TO_DATA_TYPE_MAP, BPM_TIMER_EVENT_TYPES } = require('../common/constants');
 
 const BPMN_ROOT_ELEMENTS = 'rootElements';
 const BPMN_DEFINITION = 'bpmn:Definitions';
@@ -18,8 +20,13 @@ const BPMN_TYPE_SERVICE_TASK = 'bpmn:ServiceTask';
 const BPMN_TYPE_COLLABORATION = 'bpmn:Collaboration';
 const BPMN_TYPE_PARALLEL_GATEWAY = 'bpmn:ParallelGateway';
 const BPMN_TYPE_EXCLUSIVE_GATEWAY = 'bpmn:ExclusiveGateway';
+const BPMN_TYPE_BOUNDARY_EVENT = 'bpmn:BoundaryEvent';
+const BPMN_TYPE_INTERMEDIATE_CATCH_EVENT = 'bpmn:IntermediateCatchEvent';
 const BPMN_EXTENSION_PROPERTIES = 'camunda:properties';
 const BPMN_EXTENTION_ELEMENTS = 'extensionElements';
+const BPMN_EVENT_DEFINITIONS = 'eventDefinitions';
+const BPMN_EVENT_ATTACHED_TO = 'attachedToRef';
+const BPMN_TYPE_TIMER_EVENT_DEFINITION = 'bpmn:TimerEventDefinition';
 
 const BPMN_DATAMAPPINGS_IN = 'IN';
 const BPMN_DATAMAPPINGS_OUT = 'OUT';
@@ -61,6 +68,23 @@ const BPM_MODEL_DATA_STORE_IDS = {
   agreement: 'agreement',
 };
 
+const BPM_TIMER_TYPES = {
+  DATE: 'timeDate',
+  DURATION: 'timeDuration',
+};
+
+const BPM_TIMER_ESCALATION_ACTION = 'ESCALATION_ACTION';
+
+const BPM_BOUNDARY_EVENT_BEHAVIORS = {
+  INTERRUPTING: 0,
+  NONINTERRUPTING: 1,
+};
+
+const BPM_INTERMEDIATE_EVENT_BEHAVIORS = {
+  CATCHING: 0,
+  THROWING: 1,
+};
+
 const getBooleanFromString = (val) => {
   if (val && val.constructor.name === 'Boolean') return val;
   if (val && val.constructor.name === 'String') {
@@ -84,6 +108,18 @@ const formatConditionRhValue = (_value, dataType) => {
   return value;
 };
 
+const ISO8601DurationToSeconds = (ISO8601Duration) => {
+  try {
+    const duration = moment.duration(ISO8601Duration);
+    if (!duration.isValid()) {
+      throw boom.badData(`${ISO8601Duration} is not a valid duration`);
+    }
+    return Math.floor(duration.asSeconds());
+  } catch (err) {
+    throw boom.badData(`Failed to parse duration ${ISO8601Duration}: ${err.stack}`);
+  }
+};
+
 const validateProcess = (process, dataStoreFields) => {
   const validationErrors = [];
   let err;
@@ -94,13 +130,13 @@ const validateProcess = (process, dataStoreFields) => {
       const field = dataStoreFields.filter(f => f.dataPath === transition.condition.lhDataPath)[0];
       transition.condition.rhValue = formatConditionRhValue(transition.condition.rhValue, transition.condition.dataType);
       transition.condition.operator = parseInt(transition.condition.operator, 10);
-      if (Object.values(global.__constants.COMPARISON_OPERATOR).indexOf(transition.condition.operator) === -1) {
+      if (Object.values(COMPARISON_OPERATOR).indexOf(transition.condition.operator) === -1) {
         validationErrors.push(`Invalid operator ${transition.condition.operator} for transition condition in transition ${transition.id} in process ${process.id}`);
       }
       if (!field) {
         validationErrors.push(`No matching dataStore field found for transition ${transition.id} and it's condition lhDataPath ${transition.condition.lhDataPath}`);
       } else {
-        transition.condition.dataType = global.__constants.PARAM_TYPE_TO_DATA_TYPE_MAP[field.parameterType].dataType;
+        transition.condition.dataType = PARAM_TYPE_TO_DATA_TYPE_MAP[field.parameterType].dataType;
       }
       // test if transition conditions only exist on outgoing transitions of xor gateways
       const sourceXorGateways = process.xorGateways.filter(gw => gw.id === transition.source);
@@ -167,10 +203,21 @@ const getExtensionElementsFromNode = (node) => {
         case BPMN_EXTENSION_PROPERTIES: {
           extensionElements.properties = {};
           extensionElements.properties.dataMappings = {};
+          extensionElements.properties.escalationActions = [];
           const _children = _.get(val, '$children', []);
           _children.forEach((child) => {
             if (_.startsWith(child.name, `${BPMN_DATAMAPPINGS_OUT}DATA`) || _.startsWith(child.name, `${BPMN_DATAMAPPINGS_IN}DATA`) || _.startsWith(child.name, `${BPMN_DATAMAPPINGS_INOUT}DATA`)) {
               extensionElements.properties.dataMappings[`${child.name}`] = child.value;
+            } else if (_.startsWith(child.name, BPM_TIMER_ESCALATION_ACTION)) {
+              let idx;
+              let param;
+              try {
+                ({ 0: idx, 1: param } = child.name.split(`${BPM_TIMER_ESCALATION_ACTION}_`)[1].split('_'));
+              } catch (err) {
+                return;
+              }
+              if (!extensionElements.properties.escalationActions[idx]) extensionElements.properties.escalationActions[idx] = {};
+              extensionElements.properties.escalationActions[idx][param] = param === 'dataStorageId' && child.value === BPMN_DATASTORAGEID_PROCESS_INSTANCE ? '' : child.value;
             } else {
               extensionElements.properties[`${child.name}`] = child.value || '';
             }
@@ -181,6 +228,8 @@ const getExtensionElementsFromNode = (node) => {
             extensionElements.properties.dataMappings =
               getDataMappings(extensionElements.properties.dataMappings);
           }
+          extensionElements.properties.escalationActions = extensionElements.properties.escalationActions.filter(action => action);
+          if (!extensionElements.properties.escalationActions.length) delete extensionElements.properties.escalationActions;
           break;
         }
         default:
@@ -361,6 +410,79 @@ const getGatewayFromNode = (node, type) => {
   return response;
 };
 
+const getTimerEventDefinition = (node) => {
+  const eventEl = node[BPMN_EVENT_DEFINITIONS][0];
+  if (!eventEl || eventEl['$type'] !== BPMN_TYPE_TIMER_EVENT_DEFINITION) {
+    throw boom.badData(`${node.$type} must have a timer event definition`);
+  }
+  return eventEl;
+};
+
+const getTimerEventDefinitionType = (eventEl) => {
+  let timerType;
+  timerType = eventEl[BPM_TIMER_TYPES.DATE] ? BPM_TIMER_TYPES.DATE : null;
+  timerType = timerType || (eventEl[BPM_TIMER_TYPES.DURATION] ? BPM_TIMER_TYPES.DURATION : null);
+  if (!timerType) throw boom.badData(`Timer event definition must have ${BPM_TIMER_TYPES.DATE} or ${BPM_TIMER_TYPES.DURATION}`);
+  return timerType;
+};
+
+const getTimerEventDefinitionConfiguration = (timer, timerType) => {
+  if (timerType === BPM_TIMER_TYPES.DURATION && timer.body) {
+    // for timeDuration, allow fixed value
+    // TODO: validate duration format (ISO-8601)
+    return { fixedValue: ISO8601DurationToSeconds(timer.body) };
+  }
+  if (timer[BPMN_EXTENTION_ELEMENTS]) {
+    // get properties stored as child of the timeDate or timeDuration
+    // should include data mapping info of conditional data that defines the date or duration
+    const { properties } = getExtensionElementsFromNode(timer);
+    if (!properties || !properties.dataMappings || !properties.dataMappings.length) throw boom.badData(`Conditional data for ${timerType} must be stored in data mappings`);
+    return { conditionalValue: properties.dataMappings[0] };
+  }
+  throw boom.badData(`${timerType} requires conditional or fixed (duration only) data`);
+};
+
+const getTimerBoundaryEventFromNode = (node) => {
+  const timerEventDefinition = getTimerEventDefinition(node);
+  const timerType = getTimerEventDefinitionType(timerEventDefinition);
+  let escalationAction;
+  if (timerEventDefinition[BPMN_EXTENTION_ELEMENTS]) {
+    const { properties } = getExtensionElementsFromNode(timerEventDefinition);
+    if (properties && properties.escalationActions) {
+      escalationAction = properties.escalationActions[0];
+      if (escalationAction && !escalationAction.dataPath) throw boom.badData(`Escalation action for boundary event ${node.id} is missing a data path`);
+      if (escalationAction && !escalationAction.targetFunction) throw boom.badData(`Escalation action for boundary event ${node.id} is missing a target function`);
+    }
+  }
+  const config = getTimerEventDefinitionConfiguration(timerEventDefinition[timerType], timerType);
+  const response = {
+    name: node.name,
+    id: node.id,
+    attachedTo: node[BPMN_EVENT_ATTACHED_TO].id,
+    eventType: BPM_TIMER_EVENT_TYPES[timerType],
+    eventBehavior: BPM_BOUNDARY_EVENT_BEHAVIORS.INTERRUPTING, // smart contracts will set this to interrupting anyway
+    fixedValue: config.fixedValue,
+    conditionalValue: config.conditionalValue,
+    escalationAction,
+  };
+  return response;
+};
+
+const getIntermediateCatchEventFromNode = (node) => {
+  const timerEventDefinition = getTimerEventDefinition(node);
+  const timerType = getTimerEventDefinitionType(timerEventDefinition);
+  const config = getTimerEventDefinitionConfiguration(timerEventDefinition[timerType], timerType);
+  const response = {
+    name: node.name,
+    id: node.id,
+    eventType: BPM_TIMER_EVENT_TYPES[timerType],
+    eventBehavior: BPM_INTERMEDIATE_EVENT_BEHAVIORS.CATCHING,
+    fixedValue: config.fixedValue,
+    conditionalValue: config.conditionalValue,
+  };
+  return response;
+};
+
 const getFlowElementDetails = (flowElements, participants) => {
   const response = {
     tasks: [],
@@ -373,6 +495,8 @@ const getFlowElementDetails = (flowElements, participants) => {
     andGateways: [],
     activityMap: {},
     defaultTransitions: [],
+    boundaryEvents: [],
+    intermediateCatchEvents: [],
   };
   let task;
   let userTask;
@@ -415,6 +539,12 @@ const getFlowElementDetails = (flowElements, participants) => {
         break;
       case BPMN_TYPE_PARALLEL_GATEWAY:
         response.andGateways.push(getGatewayFromNode(elem, BPM_MODEL_GATEWAY_TYPE.AND).gateway);
+        break;
+      case BPMN_TYPE_BOUNDARY_EVENT:
+        response.boundaryEvents.push(getTimerBoundaryEventFromNode(elem));
+        break;
+      case BPMN_TYPE_INTERMEDIATE_CATCH_EVENT:
+        response.intermediateCatchEvents.push(getIntermediateCatchEventFromNode(elem));
         break;
       default:
         break;

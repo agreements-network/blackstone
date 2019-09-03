@@ -43,6 +43,7 @@ const PARAMETER_TYPES = {
   DOCUMENT: 10,
   LARGE_TEXT: 11,
   POSITIVE_NUMBER: 12,
+  DURATION: 13,
 };
 
 const DATA_TYPES = {
@@ -68,6 +69,7 @@ const PARAM_TYPE_TO_DATA_TYPE_MAP = {
   10: { label: 'Document', dataType: DATA_TYPES.STRING, parameterType: PARAMETER_TYPES.DOCUMENT },
   11: { label: 'Large Text', dataType: DATA_TYPES.STRING, parameterType: PARAMETER_TYPES.LARGE_TEXT },
   12: { label: 'Positive Number', dataType: DATA_TYPES.UINT, parameterType: PARAMETER_TYPES.POSITIVE_NUMBER },
+  13: { label: 'Duration', dataType: DATA_TYPES.STRING, parameterType: PARAMETER_TYPES.DURATION },
 };
 
 const DIRECTION = {
@@ -109,6 +111,11 @@ const AGREEMENT_ATTACHMENT_CONTENT_TYPES = {
   plaintext: 'plaintext',
 };
 
+const BPM_TIMER_EVENT_TYPES = {
+  timeDate: 0,
+  timeDuration: 1,
+};
+
 module.exports = {
   BUNDLES,
   PARAMETER_TYPES,
@@ -121,4 +128,5 @@ module.exports = {
   DEFAULT_DEPARTMENT_ID,
   NOTIFICATION,
   AGREEMENT_ATTACHMENT_CONTENT_TYPES,
+  BPM_TIMER_EVENT_TYPES,
 };
