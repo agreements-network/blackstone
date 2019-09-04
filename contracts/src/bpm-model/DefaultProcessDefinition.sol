@@ -201,9 +201,10 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 	 * @param _dataPath a data path (key) to use for data lookup on a DataStorage.
 	 * @param _dataStorageId an optional key to identify a DataStorage as basis for the data path other than the default one
 	 * @param _dataStorage an optional address of a DataStorage as basis for the data path other than the default one
-	 * @param _constantValue a fixed value for timer based events representing either a datetime or a duration in secs
+	 * @param _timestampConstant a fixed value for timer based events representing either a datetime or a duration in secs
+	 * @param _durationConstant a fixed value for timer-based events representing a duration in secs
 	 */
-	function createIntermediateEvent(bytes32 _id, BpmModel.EventType _eventType, BpmModel.IntermediateEventBehavior _eventBehavior, bytes32 _dataPath, bytes32 _dataStorageId, address _dataStorage, uint256 _constantValue)
+	function createIntermediateEvent(bytes32 _id, BpmModel.EventType _eventType, BpmModel.IntermediateEventBehavior _eventBehavior, bytes32 _dataPath, bytes32 _dataStorageId, address _dataStorage, uint256 _timestampConstant, string _durationConstant)
 		external
 		pre_invalidate
 	{
@@ -217,8 +218,8 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 			graphElements.rows[_id].intermediateEvent.eventBehavior = BpmModel.IntermediateEventBehavior.CATCHING;
 		else
 			graphElements.rows[_id].intermediateEvent.eventBehavior = _eventBehavior;
-		if (_constantValue > 0) {
-			graphElements.rows[_id].intermediateEvent.primitiveData.uintValue = _constantValue;
+		if (_timestampConstant > 0) {
+			graphElements.rows[_id].intermediateEvent.primitiveData.uintValue = _timestampConstant;
 		}
 		else {
 			graphElements.rows[_id].intermediateEvent.conditionalData.dataPath = _dataPath;
@@ -241,9 +242,10 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 	 * @param _dataPath a data path (key) to use for data lookup on a DataStorage.
 	 * @param _dataStorageId an optional key to identify a DataStorage as basis for the data path other than the default one
 	 * @param _dataStorage an optional address of a DataStorage as basis for the data path other than the default one
-	 * @param _constantValue a fixed value for timer based events representing either a datetime or a duration in secs
+	 * @param _timestampConstant a fixed value for timer based events representing either a datetime or a duration in secs
+	 * @param _durationConstant a fixed value for timer-based events representing a duration in secs
 	 */
-	function addBoundaryEvent(bytes32 _activityId, bytes32 _id, BpmModel.EventType _eventType, BpmModel.BoundaryEventBehavior _eventBehavior, bytes32 _dataPath, bytes32 _dataStorageId, address _dataStorage, uint256 _constantValue)
+	function addBoundaryEvent(bytes32 _activityId, bytes32 _id, BpmModel.EventType _eventType, BpmModel.BoundaryEventBehavior _eventBehavior, bytes32 _dataPath, bytes32 _dataStorageId, address _dataStorage, uint256 _timestampConstant, string _durationConstant)
 		external
 		pre_invalidate
 	{
@@ -258,8 +260,8 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 		graphElements.rows[_id].boundaryEvent.id = _id;
 		graphElements.rows[_id].boundaryEvent.eventType = _eventType;
 		graphElements.rows[_id].boundaryEvent.eventBehavior = _eventBehavior;
-		if (_constantValue > 0) {
-			graphElements.rows[_id].boundaryEvent.primitiveData.uintValue = _constantValue;
+		if (_timestampConstant > 0) {
+			graphElements.rows[_id].boundaryEvent.primitiveData.uintValue = _timestampConstant;
 		}
 		else {
 			graphElements.rows[_id].boundaryEvent.conditionalData.dataPath = _dataPath;
@@ -833,8 +835,29 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 		defaultOutput = graphElements.rows[_id].gateway.defaultOutput;
 	}
 
-	function getBoundaryEventGraphDetails(bytes32 _id) external view returns (bytes32 id, BpmModel.EventType eventType, BpmModel.BoundaryEventBehavior eventBehavior, bytes32 successor) {
-		id = graphElements.rows[_id].boundaryEvent.id;
+	/**
+	 * @dev Returns connectivity details about the specified intermediate event
+	 * @param _id the ID of the intermediate event
+	 * @return eventType - the BpmModel.EventType of the event
+	 * @return eventBehavior - the BpmModel.IntermediateEventBehavior of the event
+	 * @return predecessor - the ID of the prodecessor element 
+	 * @return successor - the ID of the successor element, if there is one
+	 */
+	function getIntermediateEventGraphDetails(bytes32 _id) external view returns (BpmModel.EventType eventType, BpmModel.IntermediateEventBehavior eventBehavior, bytes32 predecessor, bytes32 successor) {
+		eventType = graphElements.rows[_id].intermediateEvent.eventType;
+		eventBehavior = graphElements.rows[_id].intermediateEvent.eventBehavior;
+		predecessor = graphElements.rows[_id].intermediateEvent.predecessor;
+		successor = graphElements.rows[_id].intermediateEvent.successor;
+	}
+
+	/**
+	 * @dev Returns connectivity details about the specified boundary event
+	 * @param _id the ID of the boundary event
+	 * @return eventType - the BpmModel.EventType of the event
+	 * @return eventBehavior - the BpmModel.BoundaryEventBehavior of the event
+	 * @return successor - the ID of the successor element, if there is one
+	 */
+	function getBoundaryEventGraphDetails(bytes32 _id) external view returns (BpmModel.EventType eventType, BpmModel.BoundaryEventBehavior eventBehavior, bytes32 successor) {
 		eventType = graphElements.rows[_id].boundaryEvent.eventType;
 		eventBehavior = graphElements.rows[_id].boundaryEvent.eventBehavior;
 		successor = graphElements.rows[_id].boundaryEvent.successor;

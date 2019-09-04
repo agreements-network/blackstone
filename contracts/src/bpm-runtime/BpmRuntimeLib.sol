@@ -870,7 +870,7 @@ library BpmRuntimeLib {
             // process the activity's boundary events
             for (i=0; i<elementIds.length; i++) {
                 // if there is an activity path connected to the boundary event, we follow it
-                ( , , , targetId) = _processDefinition.getBoundaryEventGraphDetails(elementIds[i]);
+                ( , , targetId) = _processDefinition.getBoundaryEventGraphDetails(elementIds[i]);
                 if (targetId != "") {
                     targetType = _processDefinition.getElementType(targetId);
                     traverseRuntimeGraph(_processDefinition, targetId, _graph);

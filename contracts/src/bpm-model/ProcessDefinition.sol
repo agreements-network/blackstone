@@ -97,9 +97,10 @@ contract ProcessDefinition is VersionedArtifact, Bytes32Identifiable {
 	 * @param _dataPath a data path (key) to use for data lookup on a DataStorage.
 	 * @param _dataStorageId an optional key to identify a DataStorage as basis for the data path other than the default one
 	 * @param _dataStorage an optional address of a DataStorage as basis for the data path other than the default one
-	 * @param _constantValue a fixed value for timer based events representing either a datetime or a duration in secs
+	 * @param _timestampConstant a fixed value for timer-based events representing a UNIX timestamp in secs
+	 * @param _durationConstant a fixed value for timer-based events representing a duration in secs
 	 */
-	function createIntermediateEvent(bytes32 _id, BpmModel.EventType _eventType, BpmModel.IntermediateEventBehavior _eventBehavior, bytes32 _dataPath, bytes32 _dataStorageId, address _dataStorage, uint256 _constantValue) external;
+	function createIntermediateEvent(bytes32 _id, BpmModel.EventType _eventType, BpmModel.IntermediateEventBehavior _eventBehavior, bytes32 _dataPath, bytes32 _dataStorageId, address _dataStorage, uint256 _timestampConstant, string _durationConstant) external;
 
 	/**
 	 * @dev Addes a boundary event to the specified activity using the provided ID, parameters, conditional (DataStorage-based)
@@ -111,9 +112,10 @@ contract ProcessDefinition is VersionedArtifact, Bytes32Identifiable {
 	 * @param _dataPath a data path (key) to use for data lookup on a DataStorage.
 	 * @param _dataStorageId an optional key to identify a DataStorage as basis for the data path other than the default one
 	 * @param _dataStorage an optional address of a DataStorage as basis for the data path other than the default one
-	 * @param _constantValue a fixed value for timer based events representing either a datetime or a duration in secs
+	 * @param _timestampConstant a fixed value for timer based events representing either a datetime or a duration in secs
+	 * @param _durationConstant a fixed value for timer-based events representing a duration in secs
 	 */
-	function addBoundaryEvent(bytes32 _activityId, bytes32 _id, BpmModel.EventType _eventType, BpmModel.BoundaryEventBehavior _eventBehavior, bytes32 _dataPath, bytes32 _dataStorageId, address _dataStorage, uint256 _constantValue) external;
+	function addBoundaryEvent(bytes32 _activityId, bytes32 _id, BpmModel.EventType _eventType, BpmModel.BoundaryEventBehavior _eventBehavior, bytes32 _dataPath, bytes32 _dataStorageId, address _dataStorage, uint256 _timestampConstant, string _durationConstant) external;
 
 	/**
 	 * @dev Adds an event action to a given boundary event.
@@ -386,7 +388,24 @@ contract ProcessDefinition is VersionedArtifact, Bytes32Identifiable {
 	 */
 	function getGatewayGraphDetails(bytes32 _id) external view returns (bytes32[] memory inputs, bytes32[] memory outputs, BpmModel.GatewayType gatewayType, bytes32 defaultOutput);
 
-	function getBoundaryEventGraphDetails(bytes32 _id) external view returns (bytes32 id, BpmModel.EventType eventType, BpmModel.BoundaryEventBehavior eventBehavior, bytes32 successor);
+	/**
+	 * @dev Returns connectivity details about the specified intermediate event
+	 * @param _id the ID of the intermediate event
+	 * @return eventType - the BpmModel.EventType of the event
+	 * @return eventBehavior - the BpmModel.IntermediateEventBehavior of the event
+	 * @return predecessor - the ID of the prodecessor element 
+	 * @return successor - the ID of the successor element, if there is one
+	 */
+	function getIntermediateEventGraphDetails(bytes32 _id) external view returns (BpmModel.EventType eventType, BpmModel.IntermediateEventBehavior eventBehavior, bytes32 predecessor, bytes32 successor);
+
+	/**
+	 * @dev Returns connectivity details about the specified boundary event
+	 * @param _id the ID of the boundary event
+	 * @return eventType - the BpmModel.EventType of the event
+	 * @return eventBehavior - the BpmModel.BoundaryEventBehavior of the event
+	 * @return successor - the ID of the successor element, if there is one
+	 */
+	function getBoundaryEventGraphDetails(bytes32 _id) external view returns (BpmModel.EventType eventType, BpmModel.BoundaryEventBehavior eventBehavior, bytes32 successor);
 
 	/**
 	 * @dev indicates whether this ProcessDefinition implements the specified interface
