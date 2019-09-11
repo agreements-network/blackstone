@@ -2,6 +2,7 @@ pragma solidity ^0.5.12;
 
 import "commons-base/BaseErrors.sol";
 import "commons-utils/TypeUtilsLib.sol";
+import "commons-utils/ArrayUtilsLib.sol";
 import "commons-collections/AbstractDataStorage.sol";
 
 import "bpm-model/ProcessDefinition.sol";
@@ -10,6 +11,7 @@ import "bpm-model/DefaultProcessModel.sol";
 contract ProcessDefinitionTest {
 	
 	using TypeUtilsLib for bytes32;
+	using ArrayUtilsLib for bytes32[];
 
 	string constant SUCCESS = "success";
 	string constant functionSigCreateTransition = "createTransition(bytes32,bytes32)";
@@ -205,14 +207,30 @@ contract ProcessDefinitionTest {
 
 		//TODO missing test if condition gets deleted when setting activity3 as the default transition
 
-		// check transitions on gateways
+		// check transitions on a gateway
 		bytes32[] memory inputs;
 		bytes32[] memory outputs;
 		bytes32 defaultOutput;
+
 		(inputs, outputs, , defaultOutput) = pd.getGatewayGraphDetails(gateway1Id);
 		if (inputs.length != 1) return "XOR SPLIT gateway should have 1 incoming transitions";
 		if (outputs.length != 2) return "XOR SPLIT gateway should have 2 outgoing transitions";
 		if (defaultOutput != "gateway2") return "XOR SPLIT should have gateway2 set as default transition";
+		if (inputs[0] != activity2Id) return "Activity2 should be input to gateway1";
+		if (!outputs.contains(activity3Id)) return "Gateway1 should have activity3 as output";
+		if (!outputs.contains(gateway2Id)) return "Gateway1 should have gateway2 as output";
+
+		// check transitions on an activity
+		bytes32 predecessor;
+		(predecessor, successor, outputs) = pd.getActivityGraphDetails(activity2Id);
+		if (predecessor != activity1Id) return "Activity2 should have activity1 as predecessor";
+		if (successor != gateway1Id) return "Activity2 should have gateway1 as successor";
+		if (outputs.length != 1) return "Activity2 should have 1 boundary event";
+
+		// check transitions on an intermediate event
+		( , ,predecessor, successor) = pd.getIntermediateEventGraphDetails(intermediateEvent1Id);
+		if (predecessor != gateway2Id) return "IntermediateEvent1 should have gateway2 as predecessor";
+		if (successor != activity4Id) return "IntermediateEvent1 should have activity4 as successor";
 
 		bytes32[] memory activityIds = pd.getActivitiesForParticipant(participantId1);
 		if (activityIds.length != 1)

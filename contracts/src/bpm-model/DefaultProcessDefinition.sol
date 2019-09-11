@@ -214,12 +214,19 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 		graphElements.rows[_id].elementType = BpmModel.ModelElementType.INTERMEDIATE_EVENT;
 		graphElements.rows[_id].intermediateEvent.id = _id;
 		graphElements.rows[_id].intermediateEvent.eventType = _eventType;
-		if (_eventType == BpmModel.EventType.TIMER_TIMESTAMP || _eventType == BpmModel.EventType.TIMER_DURATION)
+		// enforce catching behavior for timer type events
+		if (_eventType == BpmModel.EventType.TIMER_TIMESTAMP || _eventType == BpmModel.EventType.TIMER_DURATION) {
 			graphElements.rows[_id].intermediateEvent.eventBehavior = BpmModel.IntermediateEventBehavior.CATCHING;
-		else
+		}
+		else {
 			graphElements.rows[_id].intermediateEvent.eventBehavior = _eventBehavior;
-		if (_timestampConstant > 0) {
+		}
+		// use constant value or dynamic lookup via conditional data
+		if (_timestampConstant > 0 && _eventType == BpmModel.EventType.TIMER_TIMESTAMP) {
 			graphElements.rows[_id].intermediateEvent.primitiveData.uintValue = _timestampConstant;
+		}
+		else if (bytes(_durationConstant).length > 0 && _eventType == BpmModel.EventType.TIMER_DURATION) {
+			graphElements.rows[_id].intermediateEvent.primitiveData.stringValue = _durationConstant;
 		}
 		else {
 			graphElements.rows[_id].intermediateEvent.conditionalData.dataPath = _dataPath;
