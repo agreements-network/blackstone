@@ -124,6 +124,9 @@ library BpmRuntimeLib {
 
     /**
      * @dev Executes the given ActivityInstance based on the information in the provided ProcessDefinition.
+     * Note that this function assumes there is a corresponding ActivityDefinition in the provided ProcessDefinition
+     * that defines how this ActivityInstance needs to be processed. It's therefore the responsibility of the calling
+     * code to make sure this prerequisite is met.
      * @param _activityInstance the ActivityInstance
      * @param _rootDataStorage a DataStorage that can be used to resolve process data (typically this is the ProcessInstance itself)
      * @param _processDefinition a ProcessDefinition containing information how to execute the activity
@@ -132,7 +135,10 @@ library BpmRuntimeLib {
      * @return BaseErrors.INVALID_ACTOR() if the ActivityInstance is of TaskType.USER, but neither the msg.sender nor the tx.origin is the assignee of the task.
      * @return BaseErrors.NO_ERROR() if successful
      */
-    function execute(BpmRuntime.ActivityInstance storage _activityInstance, DataStorage _rootDataStorage, ProcessDefinition _processDefinition, BpmService _service) public returns (uint error) {
+    function executeActivity(BpmRuntime.ActivityInstance storage _activityInstance, DataStorage _rootDataStorage, ProcessDefinition _processDefinition, BpmService _service)
+        public
+        returns (uint error)
+    {
         uint8 activityType;
         uint8 taskType;
         uint8 behavior;
@@ -144,6 +150,9 @@ library BpmRuntimeLib {
             _activityInstance.state != BpmRuntime.ActivityInstanceState.INTERRUPTED) {
             return BaseErrors.INVALID_PARAM_STATE();
         }
+
+        // switch state to prevent re-entrancy
+        _activityInstance.state = BpmRuntime.ActivityInstanceState.APPLICATION;
 
         (activityType, taskType, behavior, , multiInstance, application, , ) = _processDefinition.getActivityData(_activityInstance.activityId);
 
@@ -286,12 +295,6 @@ library BpmRuntimeLib {
                 // A synchronous EVENT SEND task behaves exactly like a SERVICE task
                 // A EVENT RECEIVE task behaves exactly like a NONE RECEIVE activity, except that the right to complete the activity is restricted to the event application
 
-                if (_activityInstance.state != BpmRuntime.ActivityInstanceState.CREATED &&
-                    _activityInstance.state != BpmRuntime.ActivityInstanceState.SUSPENDED &&
-                    _activityInstance.state != BpmRuntime.ActivityInstanceState.INTERRUPTED) {
-                    return BaseErrors.INVALID_PARAM_STATE();
-                }
-
                 // set the application as the performer to be able to get/set IN/OUT data or complete the activity (async only)
                 ( , _activityInstance.performer, , , ) = _service.getApplicationRegistry().getApplicationData(application);
 
@@ -365,7 +368,7 @@ library BpmRuntimeLib {
             }
             else {
                 // Unknown task type. Should not happen!
-                revert(ErrorsLib.format(ErrorsLib.INVALID_INPUT(), "BpmRuntimeLib.execute(BpmRuntime.ActivityInstance,DataStorage,ProcessDefinition,BpmService)", "Unknown BpmModel.TaskType"));
+                revert(ErrorsLib.format(ErrorsLib.INVALID_INPUT(), "BpmRuntimeLib.executeActivity(BpmRuntime.ActivityInstance,DataStorage,ProcessDefinition,BpmService)", "Unknown BpmModel.TaskType"));
             }
         }
         // ### SUBPROCESS ###
@@ -431,11 +434,31 @@ library BpmRuntimeLib {
         }
         else {
             // unknown activity type. Should not happen!
-            revert(ErrorsLib.format(ErrorsLib.INVALID_INPUT(), "BpmRuntimeLib.execute(BpmRuntime.ActivityInstance,DataStorage,ProcessDefinition,BpmService)", "Unknown BpmModel.ActivityType"));
+            revert(ErrorsLib.format(ErrorsLib.INVALID_INPUT(), "BpmRuntimeLib.executeActivity(BpmRuntime.ActivityInstance,DataStorage,ProcessDefinition,BpmService)", "Unknown BpmModel.ActivityType"));
         }
         
         return BaseErrors.NO_ERROR();
     }
+
+    /**
+     * @dev Executes the given ActivityInstance as intermediate event
+     * Note that this function assumes there is a corresponding IntermediateEvent in the provided ProcessDefinition
+     * that defines how this ActivityInstance needs to be processed. It's therefore the responsibility of the calling
+     * code to make sure this prerequisite is met.
+     */
+    function executeEvent(BpmRuntime.ActivityInstance storage _activityInstance, DataStorage _rootDataStorage, ProcessDefinition _processDefinition)
+        public
+    {
+        ErrorsLib.revertIf(_activityInstance.state != BpmRuntime.ActivityInstanceState.CREATED &&
+            _activityInstance.state != BpmRuntime.ActivityInstanceState.SUSPENDED,
+            ErrorsLib.INVALID_PARAMETER_STATE(), "BpmRuntimeLib.executeEvent", "The ActivityInstance for the intermediate event is not in the correct state");
+        
+        (BpmModel.EventType eventType, BpmModel.IntermediateEventBehavior eventBehavior, , ) = _processDefinition.getIntermediateEventGraphDetails(_activityInstance.activityId);
+        // todo resolve uint value based on conditional data or constant
+        // emit LogIntermediateEventCreation()
+        // 
+    }
+
 
     /**
      * @dev Executes the given ProcessInstance leveraging the given BpmService reference by looking for activities that are "ready" to be
@@ -469,35 +492,50 @@ library BpmRuntimeLib {
                     continue;
                 }
 
-                ( , taskType, , assignee, multiInstance, , , ) = _processInstance.processDefinition.getActivityData(activityId);
-                if (multiInstance) {
-                    address targetAddress;
-                    bytes32 dataPath;
-                    if (taskType == uint8(BpmModel.TaskType.USER)) {
-                        // number of instances is determined by the conditional performer
-                        (targetAddress, dataPath) = resolveParticipant(_processInstance.processDefinition.getModel(), DataStorage(_processInstance.addr), assignee);
+                BpmModel.ModelElementType elementType = _processInstance.processDefinition.getElementType(activityId);
+                // ACTIVITY 
+                if (elementType == BpmModel.ModelElementType.ACTIVITY) {
+                    ( , taskType, , assignee, multiInstance, , , ) = _processInstance.processDefinition.getActivityData(activityId);
+                    if (multiInstance) {
+                        address targetAddress;
+                        bytes32 dataPath;
+                        if (taskType == uint8(BpmModel.TaskType.USER)) {
+                            // number of instances is determined by the conditional performer
+                            (targetAddress, dataPath) = resolveParticipant(_processInstance.processDefinition.getModel(), DataStorage(_processInstance.addr), assignee);
+                        }
+                        else {
+                            //TODO determine sizeOfArray based on data path of IN mapping
+                            // _processInstance.graph.activities[activityId].instancesTotal = sizeOfArray;
+                        }
+                        //TODO assert targetAddress is a DataStorage and dataPath is not empty
+                        _processInstance.graph.activities[activityId].instancesTotal = DataStorage(targetAddress).getArrayLength(dataPath);
                     }
                     else {
-                        //TODO determine sizeOfArray based on data path of IN mapping
-                        // _processInstance.graph.activities[activityId].instancesTotal = sizeOfArray;
+                        _processInstance.graph.activities[activityId].instancesTotal = 1;
                     }
-                    //TODO assert targetAddress is a DataStorage and dataPath is not empty
-                    _processInstance.graph.activities[activityId].instancesTotal = DataStorage(targetAddress).getArrayLength(dataPath);
+
+                    bytes32 aiId; // the unique AI ID
+                    for (uint j=0; j<_processInstance.graph.activities[activityId].instancesTotal; j++) {
+                        aiId = createActivityInstance(_processInstance, activityId, j);
+                        _service.getBpmServiceDb().addActivityInstance(aiId);
+                        //TODO error from executeActivity() function is ignored as we want to continue creating activities. Even if one failed, it should be in INTERRUPTED state or otherwise recoverable
+                        executeActivity(_processInstance.activities.rows[aiId].value, DataStorage(_processInstance.addr), _processInstance.processDefinition, _service);
+
+                        if (_processInstance.activities.rows[aiId].value.state == BpmRuntime.ActivityInstanceState.COMPLETED) {
+                            _processInstance.activities.rows[aiId].value.completed = block.timestamp;
+                            _processInstance.graph.activities[activityId].instancesCompleted++;
+                        }
+                    }
                 }
-                else {
+                // INTERMEDIATE EVENT
+                else if (elementType == BpmModel.ModelElementType.INTERMEDIATE_EVENT) {
                     _processInstance.graph.activities[activityId].instancesTotal = 1;
-                }
-
-                bytes32 aiId; // the unique AI ID
-                for (uint j=0; j<_processInstance.graph.activities[activityId].instancesTotal; j++) {
-                    aiId = createActivityInstance(_processInstance, activityId, j);
+                    aiId = createActivityInstance(_processInstance, activityId, 0);
                     _service.getBpmServiceDb().addActivityInstance(aiId);
-                    //TODO error from execute() function is ignored as we want to continue creating activities. Even if one failed, it should be in INTERRUPTED state or otherwise recoverable
-                    execute(_processInstance.activities.rows[aiId].value, DataStorage(_processInstance.addr), _processInstance.processDefinition, _service);
-
+                    executeEvent(_processInstance.activities.rows[aiId].value, DataStorage(_processInstance.addr), _processInstance.processDefinition);
                     if (_processInstance.activities.rows[aiId].value.state == BpmRuntime.ActivityInstanceState.COMPLETED) {
                         _processInstance.activities.rows[aiId].value.completed = block.timestamp;
-                        _processInstance.graph.activities[activityId].instancesCompleted++;
+                        _processInstance.graph.activities[activityId].instancesCompleted = 1;
                     }
                 }
 
@@ -825,20 +863,6 @@ library BpmRuntimeLib {
     }
 
     /**
-     * @dev Determines whether the given runtime instance has any activities that are waiting to be activated.
-     * @param _graph the ProcessGraph
-     * @return true if at least one activatable activity was found, false otherwise
-     */
-    function hasActivatableActivities(BpmRuntime.ProcessGraph storage _graph) public view returns (bool) {
-        for (uint i=0; i<_graph.activityKeys.length; i++) {
-            if (_graph.activities[_graph.activityKeys[i]].ready) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
      * @dev Recursive function to walk a graph of model elements in the given ProcessDefinition starting at the specified element ID.
      * Due to the recursive nature of the function, it is not checked whether the ProcessDefinition is valid. This is the responsibility of the calling
      * function that initiates the recursion!
@@ -879,12 +903,13 @@ library BpmRuntimeLib {
             }
         }
         // INTERMEDIATE EVENT
-        if (currentType == BpmModel.ModelElementType.INTERMEDIATE_EVENT) {
+        else if (currentType == BpmModel.ModelElementType.INTERMEDIATE_EVENT) {
             if (_graph.activities[_currentId].exists) {
                 return; // if the element has already been added, end recursion
             }
             // create a place for the current event
             addActivity(_graph, _currentId);
+            ( , , , targetId) = _processDefinition.getIntermediateEventGraphDetails(_currentId);
             // process the successor, if there is one
             if (targetId != "") {
                 targetType = _processDefinition.getElementType(targetId);
@@ -942,29 +967,33 @@ library BpmRuntimeLib {
         public
         returns (bytes32 newElementId)
     {
-        if (_sourceType == BpmModel.ModelElementType.ACTIVITY &&
-            _targetType == BpmModel.ModelElementType.ACTIVITY) {
-            // two activities (places) cannot be directly connected
+        if ((_sourceType == BpmModel.ModelElementType.ACTIVITY || _sourceType == BpmModel.ModelElementType.INTERMEDIATE_EVENT) &&
+            _targetType == BpmModel.ModelElementType.ACTIVITY || _targetType == BpmModel.ModelElementType.INTERMEDIATE_EVENT) {
+            // two places cannot be directly connected
             // so, a NONE transition is put between the two transitions
             newElementId = keccak256(abi.encodePacked(_sourceId, _targetId));
             addTransition(_graph, newElementId, BpmRuntime.TransitionType.NONE);
             // handle "colored" (marked) source activity outputs
-            if (!_sourceMarker.isEmpty()) {
+            if (_sourceType == BpmModel.ModelElementType.ACTIVITY && !_sourceMarker.isEmpty()) {
                 _graph.transitions[newElementId].marker = _sourceMarker;
             }
             connect(_graph.activities[_sourceId].node, _graph.transitions[newElementId].node); // input arc
             connect(_graph.transitions[newElementId].node, _graph.activities[_targetId].node); // output arc
         }
-        else if (_sourceType == BpmModel.ModelElementType.ACTIVITY) {
+        // after the first if() above we know that one side of the connection is a transition, so next we handle the cases of connecting a transition with a non-transition (activity or event)
+        else if (_sourceType == BpmModel.ModelElementType.ACTIVITY ||
+                 _sourceType == BpmModel.ModelElementType.INTERMEDIATE_EVENT) {
             // handle "colored" (marked) source activity outputs
-            if (!_sourceMarker.isEmpty()) {
+            if (_sourceType == BpmModel.ModelElementType.ACTIVITY && !_sourceMarker.isEmpty()) {
                 _graph.transitions[_targetId].marker = _sourceMarker;
             }
             connect(_graph.activities[_sourceId].node, _graph.transitions[_targetId].node);
         }
-        else if (_targetType == BpmModel.ModelElementType.ACTIVITY) {
+        else if (_targetType == BpmModel.ModelElementType.ACTIVITY ||
+                 _targetType == BpmModel.ModelElementType.INTERMEDIATE_EVENT) {
             connect(_graph.transitions[_sourceId].node, _graph.activities[_targetId].node);
         }
+        // at this point we know that both sides of the connection must be transitions
         else {
             // two transitions cannot be directly connected or the activation markers would not be passed on
             // so, an artificial activity (place) is put between the two transitions
@@ -1143,6 +1172,20 @@ library BpmRuntimeLib {
             }
         }
         completed = true;
+    }
+
+    /**
+     * @dev Determines whether the given runtime instance has any activities that are waiting to be activated.
+     * @param _graph the ProcessGraph
+     * @return true if at least one activatable activity was found, false otherwise
+     */
+    function hasActivatableActivities(BpmRuntime.ProcessGraph storage _graph) public view returns (bool) {
+        for (uint i=0; i<_graph.activityKeys.length; i++) {
+            if (_graph.activities[_graph.activityKeys[i]].ready) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
