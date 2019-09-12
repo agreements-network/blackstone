@@ -54,8 +54,9 @@ contract BpmServiceTest {
 	bytes32 transitionId2 = "transition2";
 	bytes32 transitionId3 = "transition3";
 	bytes32 transitionId4 = "transition4";
-	bytes32 marker1 = "event1";
-	bytes32 marker2 = "event2";
+	bytes32 eventId1 = "event1";
+	bytes32 marker1 = "marker1";
+	bytes32 marker2 = "marker2";
 
 	address assignee1 = 0x1040e6521541daB4E7ee57F21226dD17Ce9F0Fb7;
 	address assignee2 = 0x58fd1799aa32deD3F6eac096A1dC77834a446b9C;
@@ -707,12 +708,14 @@ contract BpmServiceTest {
 	}
 
 	/**
-	 * @dev Tests the creation and configuration of a process instance from a process definition, specifically the tranlation into a BpmRuntime.ProcessGraph
+	 * @dev Tests the creation and configuration of a process instance from a process definition,
+	 * specifically the conversion into a BpmRuntime.ProcessGraph. The test covers regular activities, intermediate events,
+	 * and XOR gateways.
 	 */
 	function testProcessGraphCreation() external returns (string memory) {
 
 		//                                              /--> activity3 -------------\
-		// Graph: activity1 -> activity2 -> XOR SPLIT --                             --> XOR JOIN -> activity6
+		// Graph: activity1 -> event1 -> XOR SPLIT --                             --> XOR JOIN -> activity6
 		//                                              \-> activity4 -> activity5 -/
 
 		bytes32 bytes32Value;
@@ -725,15 +728,15 @@ contract BpmServiceTest {
 		ProcessDefinition pd = ProcessDefinition(addr);
 
 		pd.createActivityDefinition(activityId1, BpmModel.ActivityType.TASK, BpmModel.TaskType.NONE, BpmModel.TaskBehavior.SEND, EMPTY, false, EMPTY, EMPTY, EMPTY);
-		pd.createActivityDefinition(activityId2, BpmModel.ActivityType.TASK, BpmModel.TaskType.NONE, BpmModel.TaskBehavior.SEND, EMPTY, false, EMPTY, EMPTY, EMPTY);
+		pd.createIntermediateEvent(eventId1, BpmModel.EventType.TIMER_DURATION, BpmModel.IntermediateEventBehavior.CATCHING, EMPTY, EMPTY, address(0), 30, EMPTY_STRING); // 30 sec wait event
 		pd.createActivityDefinition(activityId3, BpmModel.ActivityType.TASK, BpmModel.TaskType.NONE, BpmModel.TaskBehavior.SEND, EMPTY, false, EMPTY, EMPTY, EMPTY);
 		pd.createActivityDefinition(activityId4, BpmModel.ActivityType.TASK, BpmModel.TaskType.NONE, BpmModel.TaskBehavior.SEND, EMPTY, false, EMPTY, EMPTY, EMPTY);
 		pd.createActivityDefinition(activityId5, BpmModel.ActivityType.TASK, BpmModel.TaskType.NONE, BpmModel.TaskBehavior.SEND, EMPTY, false, EMPTY, EMPTY, EMPTY);
 		pd.createActivityDefinition(activityId6, BpmModel.ActivityType.TASK, BpmModel.TaskType.NONE, BpmModel.TaskBehavior.SEND, EMPTY, false, EMPTY, EMPTY, EMPTY);
 		pd.createGateway(transitionId1, BpmModel.GatewayType.XOR);
 		pd.createGateway(transitionId2, BpmModel.GatewayType.XOR);
-		pd.createTransition(activityId1, activityId2);
-		pd.createTransition(activityId2, transitionId1);
+		pd.createTransition(activityId1, eventId1);
+		pd.createTransition(eventId1, transitionId1);
 		pd.createTransition(transitionId1, activityId3);
 		pd.createTransition(transitionId1, activityId4);
 		pd.createTransition(activityId4, activityId5);
@@ -755,7 +758,7 @@ contract BpmServiceTest {
 		if (graph.activityKeys.length != 6) return "There should be 6 activities in the ProcessGraph";
 		if (graph.transitionKeys.length != 4) return "There should be 4 transitions in the ProcessGraph";
 		if (!graph.activities[activityId1].exists) return "Activity1 not found in graph.";
-		if (!graph.activities[activityId2].exists) return "Activity2 not found in graph.";
+		if (!graph.activities[eventId1].exists) return "Event1 not found in graph.";
 		if (!graph.activities[activityId3].exists) return "Activity3 not found in graph.";
 		if (!graph.activities[activityId4].exists) return "Activity4 not found in graph.";
 		if (!graph.activities[activityId5].exists) return "Activity5 not found in graph.";
@@ -767,8 +770,8 @@ contract BpmServiceTest {
 
 		if (graph.activities[activityId1].node.inputs.length != 0) return "Activity1 should have no inputs.";
 		if (graph.activities[activityId1].node.outputs.length != 1) return "Activity1 should have 1 outputs.";
-		if (graph.activities[activityId2].node.inputs.length != 1) return "Activity2 should have 1 inputs.";
-		if (graph.activities[activityId2].node.outputs.length != 1) return "Activity2 should have 1 outputs.";
+		if (graph.activities[eventId1].node.inputs.length != 1) return "Event1 should have 1 inputs.";
+		if (graph.activities[eventId1].node.outputs.length != 1) return "Event1 should have 1 outputs.";
 		if (graph.transitions[transitionId1].node.inputs.length != 1) return "Transition1 should have 1 inputs.";
 		if (graph.transitions[transitionId1].node.outputs.length != 2) return "Transition1 should have 2 outputs.";
 		if (graph.activities[activityId3].node.inputs.length != 1) return "Activity3 should have 1 inputs.";
@@ -782,9 +785,9 @@ contract BpmServiceTest {
 		if (graph.activities[activityId6].node.inputs.length != 1) return "Activity6 should have 1 inputs.";
 		if (graph.activities[activityId6].node.outputs.length != 0) return "Activity6 should have no outputs.";
 
-		if (graph.activities[activityId1].node.outputs[0] != graph.activities[activityId2].node.inputs[0]) return "Activity1 and Activity2 should share the same transition";
-		if (graph.activities[activityId2].node.outputs[0] != graph.activities[activityId3].node.inputs[0]) return "Activity2 and Activity3 should share the same transition";
-		if (graph.activities[activityId2].node.outputs[0] != graph.activities[activityId4].node.inputs[0]) return "Activity2 and Activity4 should share the same transition";
+		if (graph.activities[activityId1].node.outputs[0] != graph.activities[eventId1].node.inputs[0]) return "Activity1 and Event1 should share the same transition";
+		if (graph.activities[eventId1].node.outputs[0] != graph.activities[activityId3].node.inputs[0]) return "Event1 and Activity3 should share the same transition";
+		if (graph.activities[eventId1].node.outputs[0] != graph.activities[activityId4].node.inputs[0]) return "Event1 and Activity4 should share the same transition";
 		if (graph.activities[activityId4].node.outputs[0] != graph.activities[activityId5].node.inputs[0]) return "Activity4 and Activity5 should share the same transition";
 		if (graph.activities[activityId5].node.outputs[0] != graph.activities[activityId6].node.inputs[0]) return "Activity5 and Activity6 should share the same transition";
 		if (graph.activities[activityId3].node.outputs[0] != graph.activities[activityId6].node.inputs[0]) return "Activity3 and Activity6 should share the same transition";
