@@ -151,9 +151,6 @@ library BpmRuntimeLib {
             return BaseErrors.INVALID_PARAM_STATE();
         }
 
-        // switch state to prevent re-entrancy
-        _activityInstance.state = BpmRuntime.ActivityInstanceState.APPLICATION;
-
         (activityType, taskType, behavior, , multiInstance, application, , ) = _processDefinition.getActivityData(_activityInstance.activityId);
 
         if (activityType == uint8(BpmModel.ActivityType.TASK)) {
