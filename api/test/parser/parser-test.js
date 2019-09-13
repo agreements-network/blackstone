@@ -13,7 +13,7 @@ const bpmnParser = require(path.resolve("lib", "bpmn-parser"));
 
 const xmlString = fs.readFileSync(path.resolve("data", "sample", "T2-example.bpmn"), "utf8");
 const gatewayXml = fs.readFileSync(path.resolve("test", "data", "Gateways-Parser-Test.bpmn"), "utf8");
-
+const timerXml = fs.readFileSync(path.resolve("test", "data", "parser-timer.bpmn"), "utf8");
 
 const expectedModel = {
   id: "model_1",
@@ -194,6 +194,8 @@ const expectedProcess1 = {
     "Task_13ndog8": "Emit Sign Event",
     "Task_0667wyu": "Validate Signature"
   },
+  "boundaryEvents": [],
+  "intermediateCatchEvents": [],
   "andGateways": [],
   "xorGateways": []
 };
@@ -248,6 +250,8 @@ const expectedProcess2 = {
     "disburse1": "Disburse Payments",
     "reviewTask2": "Review Completion",
   },
+  "boundaryEvents": [],
+  "intermediateCatchEvents": [],
   "andGateways": [],
   "xorGateways": []
 };
@@ -471,6 +475,8 @@ const gatewayProcess1 = {
     "Task_09kuq9m": "Update View Stats",
     "Task_0dy81yu": "Save Feedback"
   },
+  "boundaryEvents": [],
+  "intermediateCatchEvents": [],
   "defaultTransitions": [{
     "gateway": "ExclusiveGateway_0gx4teu",
     "transition": "SequenceFlow_1jj19x9",
@@ -645,9 +651,11 @@ const timerProcess = {
         id: 'Duration Param',
       },
       escalationAction: {
-        actionFunction: 'cancel()',
+        targetFunction: 'cancel()',
         dataPath: 'agreement',
-        dataStorageId: 'PROCESS_INSTANCE',
+        dataStorageId: '',
+        dataStorage: '',
+        fixedTarget: '',
       },
       eventBehavior: 0,
       eventType: 0,
@@ -659,9 +667,12 @@ const timerProcess = {
       attachedTo: 'Task_1bq4143',
       conditionalValue: undefined,
       escalationAction: {
-        actionFunction: 'cancel()',
+        targetFunction: 'cancel()',
         dataPath: 'agreement',
-        dataStorageId: 'PROCESS_INSTANCE',
+        dataStorageId: '',
+        dataStorage: '',
+        fixedTarget: '',
+        
       },
       eventBehavior: 0,
       eventType: 1,
@@ -678,9 +689,12 @@ const timerProcess = {
         id: 'Datetime Param',
       },
       escalationAction: {
-        actionFunction: 'cancel()',
+        targetFunction: 'cancel()',
         dataPath: 'agreement',
-        dataStorageId: 'PROCESS_INSTANCE',
+        dataStorageId: '',
+        dataStorage: '',
+        fixedTarget: '',
+        
       },
       eventBehavior: 0,
       eventType: 0,
@@ -697,7 +711,7 @@ const timerProcess = {
         id: 'Datetime Param',
       },
       escalationAction: undefined,
-      eventBehavior: 1,
+      eventBehavior: 0,
       eventType: 0,
       fixedValue: undefined,
       id: 'BoundaryEvent_12uyb1r',
