@@ -1,0 +1,373 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.16.0">
+  <bpmn:dataStore id="PROCESS_INSTANCE" name="Process Instance">
+    <bpmn:extensionElements>
+      <camunda:properties>
+        <camunda:property name="agreement" value="7" />
+      </camunda:properties>
+    </bpmn:extensionElements>
+  </bpmn:dataStore>
+  <bpmn:dataStore id="agreement" name="Agreement">
+    <bpmn:extensionElements>
+      <camunda:properties>
+        <camunda:property name="Assignee" value="8" />
+        <camunda:property name="Datetime Param" value="4" />
+        <camunda:property name="Duration Param" value="1" />
+      </camunda:properties>
+    </bpmn:extensionElements>
+  </bpmn:dataStore>
+  <bpmn:collaboration id="timer_model">
+    <bpmn:extensionElements>
+      <camunda:properties>
+        <camunda:property name="id" value="timer_model" />
+        <camunda:property name="version" value="1.0.0" />
+        <camunda:property name="private" value="true" />
+      </camunda:properties>
+    </bpmn:extensionElements>
+    <bpmn:participant id="Participant_0afvvg1" name="Process Name" processRef="Process_104nkeu" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_104nkeu" name="Process Name" isExecutable="false">
+    <bpmn:extensionElements>
+      <camunda:properties>
+        <camunda:property name="processInterface" value="Agreement Formation" />
+      </camunda:properties>
+    </bpmn:extensionElements>
+    <bpmn:laneSet id="LaneSet_08x4qvj">
+      <bpmn:lane id="Lane_18i4kvj" name="All Parties (Signatories)">
+        <bpmn:extensionElements>
+          <camunda:properties>
+            <camunda:property name="conditionalPerformer" value="true" />
+            <camunda:property name="dataStorageId" value="agreement" />
+            <camunda:property name="dataPath" value="AGREEMENT_PARTIES" />
+          </camunda:properties>
+        </bpmn:extensionElements>
+        <bpmn:flowNodeRef>Task_1j8291w</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_0ky8n9d</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_0kqou8a</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>BoundaryEvent_0dscihb</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>BoundaryEvent_12uyb1r</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_1h9s4bv</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_1qvrgtf" name="Assignee">
+        <bpmn:extensionElements>
+          <camunda:properties>
+            <camunda:property name="conditionalPerformer" value="true" />
+            <camunda:property name="dataStorageId" value="agreement" />
+            <camunda:property name="dataPath" value="Assignee" />
+          </camunda:properties>
+        </bpmn:extensionElements>
+        <bpmn:flowNodeRef>Task_1jrtitw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>IntermediateThrowEvent_1q6ogli</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_1bq4143</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>BoundaryEvent_1dcsxxu</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>BoundaryEvent_0kfiepp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>IntermediateThrowEvent_1iqn4ys</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>IntermediateThrowEvent_04u998w</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:sequenceFlow id="SequenceFlow_0twrlls" name="" sourceRef="Task_0ky8n9d" targetRef="IntermediateThrowEvent_04u998w">
+      <bpmn:extensionElements>
+        <camunda:properties />
+      </bpmn:extensionElements>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SequenceFlow_1chkl5e" name="" sourceRef="IntermediateThrowEvent_04u998w" targetRef="Task_1jrtitw">
+      <bpmn:extensionElements>
+        <camunda:properties />
+      </bpmn:extensionElements>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SequenceFlow_1wv98fy" name="" sourceRef="Task_1jrtitw" targetRef="IntermediateThrowEvent_1q6ogli">
+      <bpmn:extensionElements>
+        <camunda:properties />
+      </bpmn:extensionElements>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SequenceFlow_00hsej8" name="" sourceRef="IntermediateThrowEvent_1q6ogli" targetRef="Task_1bq4143">
+      <bpmn:extensionElements>
+        <camunda:properties />
+      </bpmn:extensionElements>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SequenceFlow_1v3my1m" name="" sourceRef="Task_1bq4143" targetRef="IntermediateThrowEvent_1iqn4ys">
+      <bpmn:extensionElements>
+        <camunda:properties />
+      </bpmn:extensionElements>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SequenceFlow_126qubd" name="" sourceRef="IntermediateThrowEvent_1iqn4ys" targetRef="Task_1j8291w">
+      <bpmn:extensionElements>
+        <camunda:properties />
+      </bpmn:extensionElements>
+    </bpmn:sequenceFlow>
+    <bpmn:userTask id="Task_1jrtitw" name="User Task">
+      <bpmn:incoming>SequenceFlow_1chkl5e</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1wv98fy</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:boundaryEvent id="BoundaryEvent_1dcsxxu" name="Bound w conditional duration" attachedToRef="Task_1jrtitw">
+      <bpmn:timerEventDefinition>
+        <bpmn:extensionElements>
+          <camunda:properties>
+            <camunda:property name="ESCALATION_ACTION_0_dataStorageId" value="PROCESS_INSTANCE" />
+            <camunda:property name="ESCALATION_ACTION_0_dataPath" value="agreement" />
+            <camunda:property name="ESCALATION_ACTION_0_dataStorage" value="" />
+            <camunda:property name="ESCALATION_ACTION_0_fixedTarget" value="" />
+            <camunda:property name="ESCALATION_ACTION_0_targetFunction" value="cancel()" />
+          </camunda:properties>
+        </bpmn:extensionElements>
+        <bpmn:timeDate xsi:type="bpmn:tFormalExpression">
+          <bpmn:extensionElements>
+            <camunda:properties>
+              <camunda:property name="INDATAID_0" value="Duration Param" />
+              <camunda:property name="INDATA_Duration Param_dataStorageId" value="agreement" />
+              <camunda:property name="INDATA_Duration Param_dataPath" value="Duration Param" />
+            </camunda:properties>
+          </bpmn:extensionElements>
+        </bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:intermediateCatchEvent id="IntermediateThrowEvent_1q6ogli" name="Catch w conditional duration">
+      <bpmn:incoming>SequenceFlow_1wv98fy</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_00hsej8</bpmn:outgoing>
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDate xsi:type="bpmn:tFormalExpression">
+          <bpmn:extensionElements>
+            <camunda:properties>
+              <camunda:property name="INDATAID_0" value="Duration Param" />
+              <camunda:property name="INDATA_Duration Param_dataStorageId" value="agreement" />
+              <camunda:property name="INDATA_Duration Param_dataPath" value="Duration Param" />
+            </camunda:properties>
+          </bpmn:extensionElements>
+        </bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="Task_1bq4143" name="Noop task 1">
+      <bpmn:extensionElements>
+        <camunda:properties>
+          <camunda:property name="behavior" value="0" />
+        </camunda:properties>
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_00hsej8</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1v3my1m</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:boundaryEvent id="BoundaryEvent_0kfiepp" name="bound w fixed duration" attachedToRef="Task_1bq4143">
+      <bpmn:timerEventDefinition>
+        <bpmn:extensionElements>
+          <camunda:properties>
+            <camunda:property name="ESCALATION_ACTION_0_dataStorageId" value="PROCESS_INSTANCE" />
+            <camunda:property name="ESCALATION_ACTION_0_dataPath" value="agreement" />
+            <camunda:property name="ESCALATION_ACTION_0_dataStorage" value="" />
+            <camunda:property name="ESCALATION_ACTION_0_fixedTarget" value="" />
+            <camunda:property name="ESCALATION_ACTION_0_targetFunction" value="cancel()" />
+          </camunda:properties>
+        </bpmn:extensionElements>
+        <bpmn:timeDuration>P3Y6M4DT12H30M5S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="Task_1j8291w" name="Noop Task 2">
+      <bpmn:extensionElements>
+        <camunda:properties>
+          <camunda:property name="behavior" value="0" />
+        </camunda:properties>
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_126qubd</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0bwi3b7</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="IntermediateThrowEvent_1iqn4ys" name="Catch w fixed duration">
+      <bpmn:incoming>SequenceFlow_1v3my1m</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_126qubd</bpmn:outgoing>
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>P3Y6M4DT12H30M5S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="IntermediateThrowEvent_04u998w" name="Catch w timedate">
+      <bpmn:incoming>SequenceFlow_0twrlls</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1chkl5e</bpmn:outgoing>
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDate xsi:type="bpmn:tFormalExpression">
+          <bpmn:extensionElements>
+            <camunda:properties>
+              <camunda:property name="INDATAID_0" value="Datetime Param" />
+              <camunda:property name="INDATA_Datetime Param_dataStorageId" value="agreement" />
+              <camunda:property name="INDATA_Datetime Param_dataPath" value="Datetime Param" />
+            </camunda:properties>
+          </bpmn:extensionElements>
+        </bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Task_0ky8n9d" name="Signing Task">
+      <bpmn:extensionElements>
+        <camunda:properties>
+          <camunda:property name="application" value="AgreementSignatureCheck" />
+          <camunda:property name="INDATAID_0" value="agreement" />
+          <camunda:property name="INDATA_agreement_dataStorageId" value="PROCESS_INSTANCE" />
+          <camunda:property name="INDATA_agreement_dataPath" value="agreement" />
+        </camunda:properties>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>SequenceFlow_0twrlls</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics />
+    </bpmn:userTask>
+    <bpmn:boundaryEvent id="BoundaryEvent_0dscihb" name="Bound w timedate" attachedToRef="Task_0ky8n9d">
+      <bpmn:timerEventDefinition>
+        <bpmn:extensionElements>
+          <camunda:properties>
+            <camunda:property name="ESCALATION_ACTION_0_dataStorageId" value="PROCESS_INSTANCE" />
+            <camunda:property name="ESCALATION_ACTION_0_dataPath" value="agreement" />
+            <camunda:property name="ESCALATION_ACTION_0_dataStorage" value="" />
+            <camunda:property name="ESCALATION_ACTION_0_fixedTarget" value="" />
+            <camunda:property name="ESCALATION_ACTION_0_targetFunction" value="cancel()" />
+          </camunda:properties>
+        </bpmn:extensionElements>
+        <bpmn:timeDate xsi:type="bpmn:tFormalExpression">
+          <bpmn:extensionElements>
+            <camunda:properties>
+              <camunda:property name="INDATAID_0" value="Datetime Param" />
+              <camunda:property name="INDATA_Datetime Param_dataStorageId" value="agreement" />
+              <camunda:property name="INDATA_Datetime Param_dataPath" value="Datetime Param" />
+            </camunda:properties>
+          </bpmn:extensionElements>
+        </bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_0bwi3b7" name="" sourceRef="Task_1j8291w" targetRef="Task_0kqou8a">
+      <bpmn:extensionElements>
+        <camunda:properties />
+      </bpmn:extensionElements>
+    </bpmn:sequenceFlow>
+    <bpmn:task id="Task_0kqou8a" name="The End">
+      <bpmn:extensionElements>
+        <camunda:properties>
+          <camunda:property name="behavior" value="0" />
+        </camunda:properties>
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_0bwi3b7</bpmn:incoming>
+    </bpmn:task>
+    <bpmn:boundaryEvent id="BoundaryEvent_12uyb1r" name="Bound w timedate to process" attachedToRef="Task_1j8291w">
+      <bpmn:outgoing>SequenceFlow_0snxz1y</bpmn:outgoing>
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDate xsi:type="bpmn:tFormalExpression">
+          <bpmn:extensionElements>
+            <camunda:properties>
+              <camunda:property name="INDATAID_0" value="Datetime Param" />
+              <camunda:property name="INDATA_Datetime Param_dataStorageId" value="agreement" />
+              <camunda:property name="INDATA_Datetime Param_dataPath" value="Datetime Param" />
+            </camunda:properties>
+          </bpmn:extensionElements>
+        </bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_0snxz1y" name="" sourceRef="BoundaryEvent_12uyb1r" targetRef="Task_1h9s4bv">
+      <bpmn:extensionElements>
+        <camunda:properties />
+      </bpmn:extensionElements>
+    </bpmn:sequenceFlow>
+    <bpmn:task id="Task_1h9s4bv" name="The End From Bound">
+      <bpmn:extensionElements>
+        <camunda:properties>
+          <camunda:property name="behavior" value="0" />
+        </camunda:properties>
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_0snxz1y</bpmn:incoming>
+    </bpmn:task>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="timer_model">
+      <bpmndi:BPMNShape id="Participant_0afvvg1_di" bpmnElement="Participant_0afvvg1">
+        <dc:Bounds x="246" y="74" width="768" height="581" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_18i4kvj_di" bpmnElement="Lane_18i4kvj">
+        <dc:Bounds x="276" y="74" width="738" height="278" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_1qvrgtf_di" bpmnElement="Lane_1qvrgtf">
+        <dc:Bounds x="276" y="352" width="738" height="303" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_153pn9l_di" bpmnElement="Task_0ky8n9d">
+        <dc:Bounds x="385" y="247" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_0z8n1c6_di" bpmnElement="Task_1jrtitw">
+        <dc:Bounds x="385" y="497" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0twrlls_di" bpmnElement="SequenceFlow_0twrlls">
+        <di:waypoint x="435" y="327" />
+        <di:waypoint x="435" y="396" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1chkl5e_di" bpmnElement="SequenceFlow_1chkl5e">
+        <di:waypoint x="435" y="432" />
+        <di:waypoint x="435" y="497" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="IntermediateCatchEvent_0amfr55_di" bpmnElement="IntermediateThrowEvent_04u998w">
+        <dc:Bounds x="417" y="396" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="339" y="400" width="85" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1wv98fy_di" bpmnElement="SequenceFlow_1wv98fy">
+        <di:waypoint x="485" y="537" />
+        <di:waypoint x="630" y="537" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_00hsej8_di" bpmnElement="SequenceFlow_00hsej8">
+        <di:waypoint x="666" y="537" />
+        <di:waypoint x="810" y="537" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="IntermediateCatchEvent_0ezikvc_di" bpmnElement="IntermediateThrowEvent_1q6ogli">
+        <dc:Bounds x="630" y="519" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="622" y="562" width="53" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_0dscihb_di" bpmnElement="BoundaryEvent_0dscihb">
+        <dc:Bounds x="467" y="229" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="441" y="272" width="89" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_1dcsxxu_di" bpmnElement="BoundaryEvent_1dcsxxu">
+        <dc:Bounds x="467" y="479" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="459" y="522" width="53" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1v3my1m_di" bpmnElement="SequenceFlow_1v3my1m">
+        <di:waypoint x="860" y="497" />
+        <di:waypoint x="860" y="432" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="BoundaryEvent_0kfiepp_di" bpmnElement="BoundaryEvent_0kfiepp">
+        <dc:Bounds x="892" y="479" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="876" y="522" width="68" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_126qubd_di" bpmnElement="SequenceFlow_126qubd">
+        <di:waypoint x="860" y="396" />
+        <di:waypoint x="860" y="327" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="IntermediateCatchEvent_18u8wmv_di" bpmnElement="IntermediateThrowEvent_1iqn4ys">
+        <dc:Bounds x="842" y="396" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="765" y="400" width="67" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_026j6i3_di" bpmnElement="Task_1bq4143">
+        <dc:Bounds x="810" y="497" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_09yj1ks_di" bpmnElement="Task_1j8291w">
+        <dc:Bounds x="810" y="247" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0bwi3b7_di" bpmnElement="SequenceFlow_0bwi3b7">
+        <di:waypoint x="810" y="287" />
+        <di:waypoint x="709" y="287" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Task_0i3a5i0_di" bpmnElement="Task_0kqou8a">
+        <dc:Bounds x="609" y="247" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_12uyb1r_di" bpmnElement="BoundaryEvent_12uyb1r">
+        <dc:Bounds x="892" y="229" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="866" y="272" width="89" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0snxz1y_di" bpmnElement="SequenceFlow_0snxz1y">
+        <di:waypoint x="910" y="229" />
+        <di:waypoint x="910" y="171" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Task_002w5rn_di" bpmnElement="Task_1h9s4bv">
+        <dc:Bounds x="860" y="91" width="100" height="80" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
