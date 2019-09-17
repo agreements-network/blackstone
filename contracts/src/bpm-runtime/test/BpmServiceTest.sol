@@ -37,6 +37,20 @@ contract BpmServiceTest {
 	using BpmRuntimeLib for ProcessDefinition;
 
 	string constant EMPTY_STRING = "";
+	string constant functionSigSetActivityOutDataAsBytes32 = "setActivityOutDataAsBytes32(bytes32,bytes32,bytes32)";
+	string constant functionSigGetActivityInDataAsUint = "getActivityInDataAsUint(bytes32,bytes32)";
+	string constant functionSigRetrieveInDataAge = "retrieveInDataAge()";
+	string constant functionSigExecuteGraph = "executeGraph()";
+	string constant functionSigInitRuntime = "initRuntime()";
+	string constant functionSigStartProcessFromRepository = "startProcessFromRepository(bytes32,bytes32,bytes32)";
+	string constant functionSigGetActivityInDataAsBytes32 = "getActivityInDataAsBytes32(bytes32,bytes32)";
+	string constant functionSigResolveTransitionCondition = "resolveTransitionCondition(bytes32,bytes32)";
+	string constant functionSigSetActivityOutDataAsBool = "setActivityOutDataAsBool(bytes32,bytes32,bool)";
+	string constant functionSigCompleteActivity = "completeActivity(bytes32,address)";
+	string constant functionSigForwardCall = "forwardCall(address,bytes)";
+	string constant functionSigGetActivityInDataAsBool = "getActivityInDataAsBool(bytes32,bytes32)";
+	string constant functionSigSetActivityOutDataAsUint = "setActivityOutDataAsUint(bytes32,bytes32,uint256)";
+	string constant functionSigCompleteActivityWithUintData = "completeActivityWithUintData(bytes32,address,bytes32,uint256)";
 
 	// re-usable variables for return values
 	uint error;
@@ -480,7 +494,7 @@ contract BpmServiceTest {
 
 		// test REVERT for XOR gateway with no outputs to fire
 		if (graph.isTransitionEnabled(graph.transitionKeys[0]) != true) return "Transition1 should be enabled";
-		(success, ) = address(this).call(abi.encodeWithSignature("executeGraph()"));
+		(success, ) = address(this).call(abi.encodeWithSignature(functionSigExecuteGraph));
 		if (success)
 			return "Executing transition1 with all outputs false and no default transition should REVERT";
 
@@ -824,7 +838,7 @@ contract BpmServiceTest {
 
 		pi.initRuntime();
 		if (pi.getState() != uint(BpmRuntime.ProcessInstanceState.ACTIVE)) return "PI should be ACTIVE after runtime initiation";
-		(success, ) = address(pi).call(abi.encodeWithSignature("initRuntime()"));
+		(success, ) = address(pi).call(abi.encodeWithSignature(functionSigInitRuntime));
 		if (success)
 			return "Attempting to initiate an ACTIVE PI again should revert";
 		// TODO test more error conditions around pi.initRuntime(), e.g. invalid PD, etc.
@@ -1144,7 +1158,7 @@ contract BpmServiceTest {
 		if (pi.resolveTransitionCondition(transitionId1, activityId2) == false) return "TransitionCondition for Year should be true in first run";
 		if (pi.resolveTransitionCondition(transitionId2, transitionId3) == true) return "TransitionCondition for Lastname should be false in first run using the PD element ID";
 		if (pi.resolveTransitionCondition(transitionId2, keccak256(abi.encodePacked(transitionId2, transitionId3))) == true) return "TransitionCondition for Lastname should be false in first run using the artificial place ID";
-		(success, ) = address(pi).call(abi.encodeWithSignature("resolveTransitionCondition(bytes32,bytes32)", transitionId2, bytes32("fakeIdTTGGSS")));
+		(success, ) = address(pi).call(abi.encodeWithSignature(functionSigResolveTransitionCondition, transitionId2, bytes32("fakeIdTTGGSS")));
 		if (success)
 			return "Attempting to resolve a condition with an unknown target element should revert";
 
@@ -1253,10 +1267,10 @@ contract BpmServiceTest {
 		if (dataPath != "Message") return "The dataPath after storage resolution for inDataIdGreeting is not correct";
 
 		// test failure scenarios for IN mappings
-		(success, ) = address(pi).call(abi.encodeWithSignature("getActivityInDataAsUint(bytes32,bytes32)", eventApp.activityInstanceId(), eventApp.inDataIdAge()));
+		(success, ) = address(pi).call(abi.encodeWithSignature(functionSigGetActivityInDataAsUint, eventApp.activityInstanceId(), eventApp.inDataIdAge()));
 		if (success)
 			return "Retrieving IN data outside of the application should REVERT";
-		(success, ) = address(eventApp).call(abi.encodeWithSignature("retrieveInDataAge()"));
+		(success, ) = address(eventApp).call(abi.encodeWithSignature(functionSigRetrieveInDataAge));
 		if (success)
 			return "Retrieving IN data in the event application outside of APPLICATION state should REVERT";
 		// test successful IN mappings set during completion of the event
@@ -1266,7 +1280,7 @@ contract BpmServiceTest {
 			return "IN data inDataIdGreeting not correctly saved during completion of eventApp";
 
 		// trying to set OUT data from here should fail
-		(success, ) = address(pi).call(abi.encodeWithSignature("setActivityOutDataAsBytes32(bytes32,bytes32,bytes32)", eventApp.activityInstanceId(), eventApp.inDataIdAge(), bytes32("bla")));
+		(success, ) = address(pi).call(abi.encodeWithSignature(functionSigSetActivityOutDataAsBytes32, eventApp.activityInstanceId(), eventApp.inDataIdAge(), bytes32("bla")));
 		if (success)
 			return "Retrieving IN data outside of the application should REVERT";
 		// try completing activity1 from here should fail
@@ -1411,10 +1425,10 @@ contract BpmServiceTest {
 		if (!success) return bytes32Value.toString();
 
 		// test error conditions for creating a process via model and pd IDs
-		(success, ) = address(service).call(abi.encodeWithSignature("startProcessFromRepository(bytes32,bytes32,bytes32)", bytes32("FakeModelIdddddd"), bytes32("UserTaskProcess"), EMPTY));
+		(success, ) = address(service).call(abi.encodeWithSignature(functionSigStartProcessFromRepository, bytes32("FakeModelIdddddd"), bytes32("UserTaskProcess"), EMPTY));
 		if (success)
 			return "Starting a process with invalid model ID should REVERT";
-		(success, ) = address(service).call(abi.encodeWithSignature("startProcessFromRepository(bytes32,bytes32,bytes32)", pm.getId(), bytes32("TotallyFakeProcessssId"), EMPTY));
+		(success, ) = address(service).call(abi.encodeWithSignature(functionSigStartProcessFromRepository, pm.getId(), bytes32("TotallyFakeProcessssId"), EMPTY));
 		if (success)
 			return "Starting a process with invalid process definition ID should REVERT";
 
@@ -1439,17 +1453,17 @@ contract BpmServiceTest {
 		if (addr != address(user1)) return "Activity1 should be assigned to user1";
 
 		// test data mappings via user-assigned task
-		(success, ) = address(pi).call(abi.encodeWithSignature("getActivityInDataAsBytes32(bytes32,bytes32)", pi.getActivityInstanceAtIndex(0), bytes32("nameAccessPoint")));
+		(success, ) = address(pi).call(abi.encodeWithSignature(functionSigGetActivityInDataAsBytes32, pi.getActivityInstanceAtIndex(0), bytes32("nameAccessPoint")));
 		if (success)
 			 return "It should not be possible to access IN data mappings from a non-performer address";
-		returnData = user1.forwardCall(address(pi), abi.encodeWithSignature("getActivityInDataAsBytes32(bytes32,bytes32)", pi.getActivityInstanceAtIndex(0), bytes32("nameAccessPoint")));
+		returnData = user1.forwardCall(address(pi), abi.encodeWithSignature(functionSigGetActivityInDataAsBytes32, pi.getActivityInstanceAtIndex(0), bytes32("nameAccessPoint")));
 		if (returnData.toBytes32() != "Smith") return "IN data mapping Name should return correctly via user1";
-		returnData = user1.forwardCall(address(pi), abi.encodeWithSignature("setActivityOutDataAsBool(bytes32,bytes32,bool)", pi.getActivityInstanceAtIndex(0), bytes32("approvedAccessPoint"), true));
+		returnData = user1.forwardCall(address(pi), abi.encodeWithSignature(functionSigSetActivityOutDataAsBool, pi.getActivityInstanceAtIndex(0), bytes32("approvedAccessPoint"), true));
 
 		// complete user task 1 and check outcome
-		returnData = organizationUser.forwardCall(address(pi), abi.encodeWithSignature("completeActivity(bytes32,address)", pi.getActivityInstanceAtIndex(0), service));
+		returnData = organizationUser.forwardCall(address(pi), abi.encodeWithSignature(functionSigCompleteActivity, pi.getActivityInstanceAtIndex(0), service));
 		if (returnData.toUint() != BaseErrors.INVALID_ACTOR()) return "Attempt to complete activity1 by organizationUser should fail";
-		user1.forwardCall(address(pi), abi.encodeWithSignature("completeActivity(bytes32,address)", pi.getActivityInstanceAtIndex(0), service));
+		user1.forwardCall(address(pi), abi.encodeWithSignature(functionSigCompleteActivity, pi.getActivityInstanceAtIndex(0), service));
 		( , , , , addr, state) = pi.getActivityInstanceData(pi.getActivityInstanceAtIndex(0));
 		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity1 should be completed";
 		if (addr != address(user1)) return "Activity1 should be completedBy user1";
@@ -1462,22 +1476,22 @@ contract BpmServiceTest {
 		if (addr != address(org1)) return "Activity2 should be assigned to the organization org1";
 
 		// test data mappings via organization-assigned task
-		(success, ) = address(user1).call(abi.encodeWithSignature("forwardCall(address,bytes)", address(pi), abi.encodeWithSignature("getActivityInDataAsBool(bytes32,bytes32)", pi.getActivityInstanceAtIndex(1), bytes32("approvedAccessPoint"))));
+		(success, ) = address(user1).call(abi.encodeWithSignature(functionSigForwardCall, address(pi), abi.encodeWithSignature(functionSigGetActivityInDataAsBool, pi.getActivityInstanceAtIndex(1), bytes32("approvedAccessPoint"))));
 		if (success)
 			return "Accessing IN data mappings from a user account that is not the performer should revert";
-		returnData = organizationUser.forwardCall(address(pi), abi.encodeWithSignature("getActivityInDataAsBool(bytes32,bytes32)", pi.getActivityInstanceAtIndex(1), bytes32("approvedAccessPoint")));
+		returnData = organizationUser.forwardCall(address(pi), abi.encodeWithSignature(functionSigGetActivityInDataAsBool, pi.getActivityInstanceAtIndex(1), bytes32("approvedAccessPoint")));
 		// TODO use "decode" with solidity 0.5
 		if (returnData.length != 32) return "should have length 32";
 		if (uint256(uint8(returnData[31])) != 1) return "IN data mapping Approved should return true via user organizationUser in activity2";
-		organizationUser.forwardCall(address(pi), abi.encodeWithSignature("setActivityOutDataAsUint(bytes32,bytes32,uint256)", pi.getActivityInstanceAtIndex(1), bytes32("ageAccessPoint"), uint(21)));
+		organizationUser.forwardCall(address(pi), abi.encodeWithSignature(functionSigSetActivityOutDataAsUint, pi.getActivityInstanceAtIndex(1), bytes32("ageAccessPoint"), uint(21)));
 
 		// complete user task 2 and check outcome
-		returnData = user1.forwardCall(address(pi), abi.encodeWithSignature("completeActivity(bytes32,address)", pi.getActivityInstanceAtIndex(1), service));
+		returnData = user1.forwardCall(address(pi), abi.encodeWithSignature(functionSigCompleteActivity, pi.getActivityInstanceAtIndex(1), service));
 		// TODO use "decode" with solidity 0.5
 		if (returnData.toUint() != BaseErrors.INVALID_ACTOR()) return "Attempt to complete activity2 by user1 should fail";
 
 		// complete the activity here using an OUT data mapping to set the Age
-		returnData = organizationUser.forwardCall(address(pi), abi.encodeWithSignature("completeActivityWithUintData(bytes32,address,bytes32,uint256)", pi.getActivityInstanceAtIndex(1), address(service), bytes32("Age"), uint(21)));
+		returnData = organizationUser.forwardCall(address(pi), abi.encodeWithSignature(functionSigCompleteActivityWithUintData, pi.getActivityInstanceAtIndex(1), address(service), bytes32("Age"), uint(21)));
 		if (returnData.toUint() != BaseErrors.NO_ERROR()) return "Attempt to complete activity2 by organizationUser should be successful";
 		( , , , , addr, state) = pi.getActivityInstanceData(pi.getActivityInstanceAtIndex(1));
 		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity2 should be completed";
@@ -1635,7 +1649,7 @@ contract BpmServiceTest {
 		if (addr != address(user2)) return "Activity1.2 should be assigned to user2";
 
 		// complete first user task
-		user1.forwardCall(address(pi), abi.encodeWithSignature("completeActivity(bytes32,address)", pi.getActivityInstanceAtIndex(0), service));
+		user1.forwardCall(address(pi), abi.encodeWithSignature(functionSigCompleteActivity, pi.getActivityInstanceAtIndex(0), service));
 		( , , , , , state) = pi.getActivityInstanceData(pi.getActivityInstanceAtIndex(0));
 		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity1.1 should be completed";
 
@@ -1646,7 +1660,7 @@ contract BpmServiceTest {
 		if (service.getNumberOfActivityInstances(address(pi)) != 2) return "There should still be 2 AIs after completing only 1 instance";
 
 		// complete remaining user task
-		user2.forwardCall(address(pi), abi.encodeWithSignature("completeActivity(bytes32,address)", pi.getActivityInstanceAtIndex(1), service));
+		user2.forwardCall(address(pi), abi.encodeWithSignature(functionSigCompleteActivity, pi.getActivityInstanceAtIndex(1), service));
 		( , , , , , state) = pi.getActivityInstanceData(pi.getActivityInstanceAtIndex(1));
 		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity1.2 should be completed";
 
