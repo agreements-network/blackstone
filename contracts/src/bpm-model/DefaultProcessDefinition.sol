@@ -204,7 +204,7 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 	 * @param _timestampConstant a fixed value for timer based events representing either a datetime or a duration in secs
 	 * @param _durationConstant a fixed value for timer-based events representing a duration in secs
 	 */
-	function createIntermediateEvent(bytes32 _id, BpmModel.EventType _eventType, BpmModel.IntermediateEventBehavior _eventBehavior, bytes32 _dataPath, bytes32 _dataStorageId, address _dataStorage, uint256 _timestampConstant, string _durationConstant)
+	function createIntermediateEvent(bytes32 _id, BpmModel.EventType _eventType, BpmModel.IntermediateEventBehavior _eventBehavior, bytes32 _dataPath, bytes32 _dataStorageId, address _dataStorage, uint256 _timestampConstant, string calldata _durationConstant)
 		external
 		pre_invalidate
 	{
@@ -252,7 +252,7 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 	 * @param _timestampConstant a fixed value for timer based events representing either a datetime or a duration in secs
 	 * @param _durationConstant a fixed value for timer-based events representing a duration in secs
 	 */
-	function addBoundaryEvent(bytes32 _activityId, bytes32 _id, BpmModel.EventType _eventType, BpmModel.BoundaryEventBehavior _eventBehavior, bytes32 _dataPath, bytes32 _dataStorageId, address _dataStorage, uint256 _timestampConstant, string _durationConstant)
+	function addBoundaryEvent(bytes32 _activityId, bytes32 _id, BpmModel.EventType _eventType, BpmModel.BoundaryEventBehavior _eventBehavior, bytes32 _dataPath, bytes32 _dataStorageId, address _dataStorage, uint256 _timestampConstant, string calldata _durationConstant)
 		external
 		pre_invalidate
 	{
@@ -267,8 +267,12 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 		graphElements.rows[_id].boundaryEvent.id = _id;
 		graphElements.rows[_id].boundaryEvent.eventType = _eventType;
 		graphElements.rows[_id].boundaryEvent.eventBehavior = _eventBehavior;
-		if (_timestampConstant > 0) {
+		// use constant value or dynamic lookup via conditional data
+		if (_timestampConstant > 0 && _eventType == BpmModel.EventType.TIMER_TIMESTAMP) {
 			graphElements.rows[_id].boundaryEvent.primitiveData.uintValue = _timestampConstant;
+		}
+		else if (bytes(_durationConstant).length > 0 && _eventType == BpmModel.EventType.TIMER_DURATION) {
+			graphElements.rows[_id].boundaryEvent.primitiveData.stringValue = _durationConstant;
 		}
 		else {
 			graphElements.rows[_id].boundaryEvent.conditionalData.dataPath = _dataPath;
@@ -288,7 +292,7 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 	 * @param _fixedTarget a fixed address for the escalation target
 	 * @param _actionFunction a function signature to be invoked on the escalation target
 	 */
-	function addBoundaryEventAction(bytes32 _id, bytes32 _dataPath, bytes32 _dataStorageId, address _dataStorage, address _fixedTarget, string _actionFunction)
+	function addBoundaryEventAction(bytes32 _id, bytes32 _dataPath, bytes32 _dataStorageId, address _dataStorage, address _fixedTarget, string calldata _actionFunction)
 		external
 		pre_invalidate
 	{
@@ -821,7 +825,7 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 	 * @return successor - the ID of its successor model element
 	 * @return boundaryEventIds - the IDs of its boundary events, if any
 	 */
-	function getActivityGraphDetails(bytes32 _id) external view returns (bytes32 predecessor, bytes32 successor, bytes32[] boundaryEventIds) {
+	function getActivityGraphDetails(bytes32 _id) external view returns (bytes32 predecessor, bytes32 successor, bytes32[] memory boundaryEventIds) {
 		predecessor = graphElements.rows[_id].activity.predecessor;
 		successor = graphElements.rows[_id].activity.successor;
 		boundaryEventIds = graphElements.rows[_id].activity.boundaryEventIds;
