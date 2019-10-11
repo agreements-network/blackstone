@@ -38,7 +38,7 @@ jobs:
 - name: BpmRuntimeLib
   deploy:
     contract: bpm-runtime/BpmRuntimeLib.sol
-    libraries: ErrorsLib:$ErrorsLib, TypeUtilsLib:$TypeUtilsLib, ArrayUtilsLib:$ArrayUtilsLib, MappingsLib:$MappingsLib, ERC165Utils:$ERC165Utils
+    libraries: ErrorsLib:$ErrorsLib, TypeUtilsLib:$TypeUtilsLib, ArrayUtilsLib:$ArrayUtilsLib, MappingsLib:$MappingsLib, ERC165Utils:$ERC165Utils, DataStorageUtils:$DataStorageUtils
 
 - name: AgreementsAPI
   deploy:

@@ -218,7 +218,7 @@ contract BpmServiceTest {
 	/**
 	 * @dev Tests a process graph consisting of sequential activities.
 	 */
-	function testProcessGraphColoredPaths() external returns (string) {
+	function testProcessGraphColoredPaths() external returns (string memory) {
 
 		//              coloredPath -> activity3
 		//             /  

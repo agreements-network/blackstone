@@ -38,7 +38,7 @@ jobs:
   deploy:
     contract: bpm-runtime/BpmRuntimeLib.sol
     instance: BpmRuntimeLib
-    libraries: ErrorsLib:$ErrorsLib, TypeUtilsLib:$TypeUtilsLib, ArrayUtilsLib:$ArrayUtilsLib, MappingsLib:$MappingsLib, ERC165Utils:$ERC165Utils
+    libraries: ErrorsLib:$ErrorsLib, TypeUtilsLib:$TypeUtilsLib, ArrayUtilsLib:$ArrayUtilsLib, MappingsLib:$MappingsLib, ERC165Utils:$ERC165Utils, DataStorageUtils:$DataStorageUtils
 
 ##########
 # Service Upgradeability Tests
