@@ -241,6 +241,11 @@ contract ProcessInstance is VersionedArtifact, DataStorage, AddressScopes, Owner
     function resolveOutDataLocation(bytes32 _activityInstanceId, bytes32 _dataMappingId) public view returns (address dataStorage, bytes32 dataPath);
 
 	/**
+	 * //TODO @SEAN
+	 */
+    function setTimerEventTarget(bytes32 _eventInstanceId, uint _targetTime) public;
+
+	/**
 	 * @dev Returns the process definition on which this instance is based.
 	 * @return the address of a ProcessDefinition
 	 */
