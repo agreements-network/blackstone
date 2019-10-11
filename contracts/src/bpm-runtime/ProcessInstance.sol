@@ -58,6 +58,11 @@ contract ProcessInstance is VersionedArtifact, DataStorage, AddressScopes, Owner
 	 */
 	function abort() external;
 
+    // @SEAN
+    function triggerBoundaryEvent(bytes32 _activityInstanceId, bytes32 _eventId) external;
+
+    function triggerIntermediateEvent(bytes32 _eventId) external;
+
 	/**
 	 * @dev Completes the specified activity
 	 * @param _activityInstanceId the activity instance
@@ -240,8 +245,9 @@ contract ProcessInstance is VersionedArtifact, DataStorage, AddressScopes, Owner
      */
     function resolveOutDataLocation(bytes32 _activityInstanceId, bytes32 _dataMappingId) public view returns (address dataStorage, bytes32 dataPath);
 
+	//@SEAN
 	/**
-	 * //TODO @SEAN
+	 * //TODO
 	 */
     function setTimerEventTarget(bytes32 _eventInstanceId, uint _targetTime) public;
 

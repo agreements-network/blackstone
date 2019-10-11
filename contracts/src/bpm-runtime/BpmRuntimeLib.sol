@@ -119,6 +119,25 @@ library BpmRuntimeLib {
         return _map.keys.length;
     }
 
+    /**
+     * @dev Internal function to perform an "upsert" of a new IntermediateEventInstance into the provided map.
+     *
+     * @param _map the map
+     * @param _value the value
+     * @return the number of tasks at the end of the operation
+     */
+    function insertOrUpdate(BpmRuntime.IntermediateEventInstanceMap storage _map, BpmRuntime.IntermediateEventInstance memory _value) internal returns (uint)
+    {
+        if (_map.rows[_value.id].exists) {
+            _map.rows[_value.id].value = _value;
+        } else {
+            _map.rows[_value.id].keyIdx = (_map.keys.push(_value.id)-1);
+            _map.rows[_value.id].value = _value;
+            _map.rows[_value.id].exists = true;
+        }
+        return _map.keys.length;
+    }
+
     function emitAICompletionEvent(bytes32 _aiId, address _completedBy, uint _completed, address _performer, BpmRuntime.ActivityInstanceState _state) internal {
         emit LogActivityInstanceCompletion(
             EVENT_ID_ACTIVITY_INSTANCES,
@@ -843,7 +862,7 @@ library BpmRuntimeLib {
     function createIntermediateEventInstance(BpmRuntime.ProcessInstance storage _processInstance, bytes32 _eventId) public returns (bytes32 eiId) {
         eiId = keccak256(abi.encodePacked(_processInstance.addr, _eventId));
         uint created = block.timestamp;
-        // BpmRuntime.ActivityInstance memory ai = BpmRuntime.ActivityInstance({id: aiId,
+        // BpmRuntime.IntermediateEventInstance memory ei = BpmRuntime.IntermediateEventInstance({id: eiId,
         //                                                                      activityId: _activityId,
         //                                                                      processInstance: _processInstance.addr,
         //                                                                      multiInstanceIndex: _index,
@@ -852,11 +871,11 @@ library BpmRuntimeLib {
         //                                                                      performer: address(0),
         //                                                                      completed: uint8(0),
         //                                                                      completedBy: address(0)});
-        // insertOrUpdate(_processInstance.activities, ai);
+        // insertOrUpdate(_processInstance.intermediateEvents, ei);
         // emit LogItermediateEventInstanceCreation(
         //     EVENT_ID_ACTIVITY_INSTANCES,
-        //     aiId,
-        //     _activityId,
+        //     eiId,
+        //     _eventId,
         //     _processInstance.addr,
         //     created,
         //     address(0),
@@ -887,6 +906,9 @@ library BpmRuntimeLib {
                     );
                 }
             }
+
+            // TODO @SEAN need to abort all intermediate events as well
+
             clear(_processInstance.graph);
             _processInstance.state = BpmRuntime.ProcessInstanceState.ABORTED;
             emit LogProcessInstanceStateUpdate(
