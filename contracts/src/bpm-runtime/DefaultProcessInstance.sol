@@ -546,6 +546,12 @@ contract DefaultProcessInstance is AbstractVersionedArtifact(1,0,0), AbstractDel
         }
     }
 
+    function setTimerEventTarget(bytes32 _eventInstanceId, uint _targetTime) public {
+        // @SEAN
+        // Todo: revert if targetTime already set
+        // set self.intermediateEvents.rows[_eventInstanceId].targetTime = _targetTime;
+    }
+
 	/**
 	 * @dev Returns the process definition on which this instance is based.
 	 * @return the address of a ProcessDefinition

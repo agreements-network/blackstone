@@ -867,6 +867,17 @@ contract BpmServiceTest {
 		return SUCCESS;
 	}
 
+	// @SEAN
+	/**
+	 * @dev Tests a conditional looping implementation (see also loop graph test)
+	 */
+	function testIntermediateEventHandling() external returns (string memory) {
+
+		// Graph: activity1 ->  intermediateEvent1
+
+		
+	}
+
 	/**
 	 * @dev Tests a straight-through process with XOR and AND gateways
 	 */

@@ -21,6 +21,7 @@ library BpmRuntime {
 		ProcessInstanceState state;
         ProcessGraph graph;
         ActivityInstanceMap activities;
+        IntermediateEventInstanceMap intermediateEvents;
 	}
 	
 	struct ActivityInstance {
@@ -43,6 +44,27 @@ library BpmRuntime {
 
     struct ActivityInstanceMap {
         mapping(bytes32 => ActivityInstanceElement) rows;
+        bytes32[] keys;
+    }
+
+	struct IntermediateEventInstance {
+        bytes32 id;
+        bytes32 eventId;
+        address processInstance;
+        uint created;
+        uint completed;
+		ActivityInstanceState state;
+        uint timerTarget;
+	}
+
+    struct IntermediateEventElement {
+        bool exists;
+        uint keyIdx;
+        IntermediateEventInstance value;
+    }
+
+    struct IntermediateEventInstanceMap {
+        mapping(bytes32 => IntermediateEventElement) rows;
         bytes32[] keys;
     }
 
@@ -79,7 +101,7 @@ library BpmRuntime {
         bool exists;
         uint instancesTotal; // only used for tasks
         uint instancesCompleted; // only used for tasks
-        mapping (bytes32 => bool) markers;
+        mapping (bytes32 => bool) markers; // only used for tasks
     }
 
     // The Transition guides the implementation of different gateway types in the Petri net
