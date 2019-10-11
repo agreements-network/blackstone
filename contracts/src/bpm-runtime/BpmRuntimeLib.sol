@@ -4,6 +4,7 @@ import "commons-base/ErrorsLib.sol";
 import "commons-base/BaseErrors.sol";
 import "commons-utils/TypeUtilsLib.sol";
 import "commons-standards/ERC165Utils.sol";
+import "commons-collections/DataStorageUtils.sol";
 import "commons-auth/Organization.sol";
 import "bpm-model/BpmModel.sol";
 import "bpm-model/ProcessModel.sol";
@@ -78,9 +79,20 @@ library BpmRuntimeLib {
         uint8 state
     );
 
+    event LogIntermediateEventCreation(
+		bytes32 indexed eventURN,
+        bytes32 eventId,
+        bytes32 eventInstanceId,
+        uint8 eventType,
+        uint8 eventBehavior,
+        uint uintValue,
+        string stringValue
+    );
+
     bytes32 public constant EVENT_ID_ACTIVITY_INSTANCES = "AN://activity-instances";
     // NOTE: EVENT_ID_PROCESS_INSTANCES is also defined in ProcessInstance.sol as similar events can generate from within the PI
 	bytes32 public constant EVENT_ID_PROCESS_INSTANCES = "AN://process-instances";
+	bytes32 public constant EVENT_ID_INTERMEDIATE_EVENTS = "AN://intermediate-events";
 
     function getERC165IdOrganization() internal pure returns (bytes4) {
         return (bytes4(keccak256(abi.encodePacked("addUser(address)"))) ^ 
@@ -439,7 +451,7 @@ library BpmRuntimeLib {
 
     /**
      * @dev Executes the given ActivityInstance as intermediate event
-     * Note that this function assumes there is a corresponding IntermediateEvent in the provided ProcessDefinition
+     * Note that this function assumes there is a corresponding IntermediateEvent definition in the provided ProcessDefinition
      * that defines how this ActivityInstance needs to be processed. It's therefore the responsibility of the calling
      * code to make sure this prerequisite is met.
      */
@@ -451,9 +463,28 @@ library BpmRuntimeLib {
             ErrorsLib.INVALID_PARAMETER_STATE(), "BpmRuntimeLib.executeEvent", "The ActivityInstance for the intermediate event is not in the correct state");
         
         (BpmModel.EventType eventType, BpmModel.IntermediateEventBehavior eventBehavior, , ) = _processDefinition.getIntermediateEventGraphDetails(_activityInstance.activityId);
-        // todo resolve uint value based on conditional data or constant
-        // emit LogIntermediateEventCreation()
-        // 
+        // @SEAN
+        // examine type and retrieve uint for TIMER_TIMESTAMP or string for TIMER_DURATION
+        // check constants for event definition first and use them if they exist
+        // otherwise, resolve conditional (data path) data:
+        (bytes32 dataPath, bytes32 dataStorageId, address dataStorage, uint timestampConstant, string memory durationConstant) = _processDefinition.getTimerEventDetails(_activityInstance.activityId); 
+        address dataStorageAddress = DataStorageUtils.resolveDataStorageAddress(dataStorageId, dataStorage, _rootDataStorage);
+
+        // Depending on eventType (timestamp vs. duration), retrieve the conditional value from the DataStorage
+        // DataStorage(dataStorageAddress).getDataValueAsUint(dataPath); or DataStorage(dataStorageAddress).getDataValueAsString(dataPath);
+
+        // Emit the event for lair
+        // emit LogIntermediateEventCreation(...)
+        
+        // Depending on eventBehavior (catching vs. non-interrupting), the activityInstance state needs to be set
+        _activityInstance.state = BpmRuntime.ActivityInstanceState.SUSPENDED; // catching
+        // or
+        _activityInstance.state = BpmRuntime.ActivityInstanceState.COMPLETED; // non-interrupting
+        _activityInstance.completed = block.timestamp;
+
+        // Missing:
+        // a way for Lair to inject the UNIX timestamp into the waiting event in the case of duration
+        // implementing function "triggerEvent"
     }
 
 
@@ -526,6 +557,7 @@ library BpmRuntimeLib {
                 }
                 // INTERMEDIATE EVENT
                 else if (elementType == BpmModel.ModelElementType.INTERMEDIATE_EVENT) {
+                    bytes32 aiId; // the unique AI ID
                     _processInstance.graph.activities[activityId].instancesTotal = 1;
                     aiId = createActivityInstance(_processInstance, activityId, 0);
                     _service.getBpmServiceDb().addActivityInstance(aiId);

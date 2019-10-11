@@ -875,6 +875,26 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 	}
 
 	/**
+	 * //TODO
+	 */
+	function getTimerEventDetails(bytes32 _id) external view returns (bytes32 dataPath, bytes32 dataStorageId, address dataStorage, uint timestampConstant, string memory durationConstant) {
+		if (graphElements.rows[_id].elementType == BpmModel.ModelElementType.INTERMEDIATE_EVENT) {
+			dataPath = graphElements.rows[_id].intermediateEvent.conditionalData.dataPath;
+			dataStorageId = graphElements.rows[_id].intermediateEvent.conditionalData.dataStorageId;
+			dataStorage = graphElements.rows[_id].intermediateEvent.conditionalData.dataStorage;
+			timestampConstant = graphElements.rows[_id].intermediateEvent.primitiveData.uintValue;
+			durationConstant = graphElements.rows[_id].intermediateEvent.primitiveData.stringValue;
+		}
+		else if (graphElements.rows[_id].elementType == BpmModel.ModelElementType.BOUNDARY_EVENT) {
+			dataPath = graphElements.rows[_id].boundaryEvent.conditionalData.dataPath;
+			dataStorageId = graphElements.rows[_id].boundaryEvent.conditionalData.dataStorageId;
+			dataStorage = graphElements.rows[_id].boundaryEvent.conditionalData.dataStorage;
+			timestampConstant = graphElements.rows[_id].boundaryEvent.primitiveData.uintValue;
+			durationConstant = graphElements.rows[_id].boundaryEvent.primitiveData.stringValue;
+		}
+	}
+
+	/**
 	 * @dev indicates whether this ProcessDefinition implements the specified interface
 	 * @param _model the model defining the interface
 	 * @param _interfaceId the ID of the interface

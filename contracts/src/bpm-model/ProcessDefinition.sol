@@ -408,6 +408,11 @@ contract ProcessDefinition is VersionedArtifact, Bytes32Identifiable {
 	function getBoundaryEventGraphDetails(bytes32 _id) external view returns (BpmModel.EventType eventType, BpmModel.BoundaryEventBehavior eventBehavior, bytes32 successor);
 
 	/**
+	 * //TODO
+	 */
+	function getTimerEventDetails(bytes32 _id) external view returns (bytes32 dataPath, bytes32 dataStorageId, address dataStorage, uint timestampConstant, string memory durationConstant);
+
+	/**
 	 * @dev indicates whether this ProcessDefinition implements the specified interface
 	 * @param _model the model defining the interface
 	 * @param _interfaceId the ID of the interface
