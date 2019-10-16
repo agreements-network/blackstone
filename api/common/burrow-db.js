@@ -1,5 +1,5 @@
 const binstring = require('binstring');
-const burrow = require('@monax/burrow');
+const burrow = require('@hyperledger/burrow');
 const EventEmitter = require('events');
 const util = require('util');
 const logger = require(`${global.__common}/logger`);

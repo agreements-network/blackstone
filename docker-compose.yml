@@ -13,9 +13,9 @@ services:
     ports:
     - "5432:5432"
     environment:
-      POSTGRES_USER: blackstone_development
-      POSTGRES_PASSWORD: blackstone_development
-      POSTGRES_DB: blackstone_development
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
   chain:
     # We could reference hyperledger/burrow:$version directly here but for the sake of only specifying our dependency version
     # once we do it in the project Dockerfile
@@ -35,7 +35,7 @@ services:
       context: .
       args:
         BURROW_REPO: hyperledger/burrow
-        BURROW_VERSION: "0.28.2"
+        BURROW_VERSION: "0.29.3"
     restart: always
     command:
     - burrow
@@ -44,7 +44,7 @@ services:
     - --db-adapter
     - postgres
     - --db-url
-    - postgres://blackstone_development:blackstone_development@postgres:5432/blackstone_development?sslmode=disable
+    - postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
     - --db-schema
     - data
     - --grpc-addr

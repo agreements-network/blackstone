@@ -11,7 +11,7 @@ chai.use(chaiAsPromised)
 const should = chai.should()
 const expect = chai.expect
 const assert = chai.assert
-const burrow = require('@monax/burrow')
+const burrow = require('@hyperledger/burrow')
 const crypto = require('crypto');
 
 global.__appDir = path.resolve()

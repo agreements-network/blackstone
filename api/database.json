@@ -3,21 +3,21 @@
 
   "dev": {
     "driver": "pg",
-    "user": "blackstone_development",
-    "password": "blackstone_development",
+    "user": {"ENV": "POSTGRES_DB_USER"},
+    "password": {"ENV": "POSTGRES_DB_PASSWORD"},
     "host": {"ENV": "POSTGRES_DB_HOST"},
-    "port": "5432",
-    "database": "blackstone_development",
+    "port": {"ENV": "POSTGRES_DB_PORT"},
+    "database": {"ENV": "POSTGRES_DB_DATABASE"},
     "schema": {"ENV": "POSTGRES_DB_SCHEMA"}
   },
 
   "cluster": {
     "driver": "pg",
-    "user": "blackstone_development",
-    "password": "blackstone_development",
-    "host": "localhost",
-    "port": "5432",
-    "database": "blackstone_development",
+    "user": {"ENV": "POSTGRES_DB_USER"},
+    "password": {"ENV": "POSTGRES_DB_PASSWORD"},
+    "host": {"ENV": "POSTGRES_DB_HOST"},
+    "port": {"ENV": "POSTGRES_DB_PORT"},
+    "database": {"ENV": "POSTGRES_DB_DATABASE"},
     "schema": {"ENV": "POSTGRES_DB_SCHEMA"}
   },
 

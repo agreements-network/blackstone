@@ -4,7 +4,7 @@ const fs = require('fs')
 const toml = require('toml')
 const path = require('path')
 const _ = require('lodash')
-const burrow = require('@monax/burrow')
+const burrow = require('@hyperledger/burrow')
 const crypto = require('crypto');
 
 // Set up global directory constants
