@@ -1,4 +1,4 @@
-pragma solidity ^0.5.12;
+pragma solidity ^0.5;
 
 import "commons-base/ErrorsLib.sol";
 import "commons-base/StorageDefSystemOwner.sol";

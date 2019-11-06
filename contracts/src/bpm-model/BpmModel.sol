@@ -1,4 +1,4 @@
-pragma solidity ^0.5.12;
+pragma solidity ^0.5;
 
 import "commons-collections/DataStorageUtils.sol";
 
@@ -131,8 +131,11 @@ library BpmModel {
         bytes32 id;
         EventType eventType;
         IntermediateEventBehavior eventBehavior;
-        DataStorageUtils.ConditionalData conditionalData;
-        Primitive primitiveData;
+        // If the timerValue.uintValue is greater than 0, then timer is absolutely time stamp as a unix timestamp
+        // If the timerValue.stringValue is non-empty, then the trigger is a duration. This will be converted to a time stamp by liar
+        Primitive timerValue;
+        // If the timerValue.uintValue is 0 and timerValue.stringValue is "", then the timer is in storage
+        DataStorageUtils.ConditionalData timerStorage;
         bytes32 predecessor;
         bytes32 successor;
 
@@ -146,8 +149,8 @@ library BpmModel {
         bytes32 id;
         EventType eventType;
         BoundaryEventBehavior eventBehavior;
-        DataStorageUtils.ConditionalData conditionalData;
-        Primitive primitiveData;
+        DataStorageUtils.ConditionalData timerStorage;
+        Primitive timerValue;
         bytes32 successor;
         BoundaryEventAction[] actions;
     }

@@ -1,4 +1,4 @@
-pragma solidity ^0.5.12;
+pragma solidity ^0.5;
 
 import "commons-utils/TypeUtilsLib.sol";
 import "commons-management/AbstractDelegateProxy.sol";

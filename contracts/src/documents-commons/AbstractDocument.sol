@@ -1,4 +1,4 @@
-pragma solidity ^0.5.12;
+pragma solidity ^0.5;
 
 import "commons-base/BaseErrors.sol";
 import "commons-base/Owned.sol";

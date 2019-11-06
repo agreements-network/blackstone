@@ -178,6 +178,18 @@ jobs:
     relation: eq
     val: success
 
+- name: testIntermediateEventHandling
+  call:
+    destination: $BpmServiceTest
+    bin: BpmServiceTest
+    function: testIntermediateEventHandling
+
+- name: assertIntermediateEventHandling
+  assert:
+    key: $testIntermediateEventHandling
+    relation: eq
+    val: success
+
 - name: testProcessGraphParallelGateway
   call:
     destination: $BpmServiceTest

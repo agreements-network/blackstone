@@ -1,4 +1,4 @@
-pragma solidity ^0.5.12;
+pragma solidity ^0.5;
 
 import "commons-base/BaseErrors.sol";
 import "commons-base/SystemOwned.sol";
@@ -867,15 +867,65 @@ contract BpmServiceTest {
 		return SUCCESS;
 	}
 
-	// @SEAN
 	/**
 	 * @dev Tests a conditional looping implementation (see also loop graph test)
 	 */
 	function testIntermediateEventHandling() external returns (string memory) {
 
 		// Graph: activity1 ->  intermediateEvent1
+		(error, addr) = processModelRepository.createProcessModel("testModelIntermediateEvents", [1,0,0], modelAuthor, false, dummyModelFileReference);
+		if (addr == address(0)) return "Unable to create a ProcessModel";
+		ProcessModel pm = ProcessModel(addr);
 
+		addr = pm.createProcessDefinition("ProcessDefinitionSequence", address(artifactsRegistry));
+		ProcessDefinition pd = ProcessDefinition(addr);
+
+		pd.createActivityDefinition(activityId1, BpmModel.ActivityType.TASK, BpmModel.TaskType.NONE, BpmModel.TaskBehavior.SEND, EMPTY, false, EMPTY, EMPTY, EMPTY);
+		pd.createIntermediateEvent(eventId1, BpmModel.EventType.TIMER_DURATION, BpmModel.IntermediateEventBehavior.CATCHING, EMPTY, EMPTY, address(0), 0, "foo duration"); // 30 sec wait event
+		pd.createActivityDefinition(activityId3, BpmModel.ActivityType.TASK, BpmModel.TaskType.NONE, BpmModel.TaskBehavior.SEND, EMPTY, false, EMPTY, EMPTY, EMPTY);
+		pd.createTransition(activityId1, eventId1);
+		pd.createTransition(eventId1, activityId3);
 		
+		// Validate to set the start activity and enable runtime configuration
+		pd.validate();
+
+		TestBpmService service = createNewTestBpmService();
+
+		ProcessInstance pi = service.createDefaultProcessInstance(address(pd), address(this), EMPTY);
+
+		pi.initRuntime();
+		if (pi.getState() != uint(BpmRuntime.ProcessInstanceState.ACTIVE)) return "PI should be ACTIVE after runtime initiation";
+		(success, ) = address(pi).call(abi.encodeWithSignature(functionSigInitRuntime));
+		if (success)
+			return "Attempting to initiate an ACTIVE PI again should revert";
+		// TODO test more error conditions around pi.initRuntime(), e.g. invalid PD, etc.
+
+		service.addProcessInstance(pi);
+		error = pi.execute(service);
+		if (error != BaseErrors.NO_ERROR()) return "Unexpected error executing the PI";
+
+		// intermediate event is waiting for duration
+		bytes32 eventId = pi.getIntermediateInstanceAtIndex(0);
+		pi.setTimerEventTarget(eventId, block.timestamp);
+		pi.triggerIntermediateEvent(eventId, service);
+
+		// verify DB state
+		if (service.getDatabase().getNumberOfProcessInstances() != 1) return "There should be 1 PI in the DB";
+		if (service.getDatabase().getNumberOfActivityInstances() != 3) return "There should be 3 AIs in the DB";
+		if (pi.getNumberOfActivityInstances() != 2) return "There should be 3 AIs in the ProcessInstance";
+		if (pi.getNumberOfIntermediateEventInstances() != 1) return "There should be 1 IEs in the ProcessInstance";
+
+		// verify individual activity instances
+		uint8 state;
+		( , , , , , state) = pi.getActivityInstanceData(pi.getActivityInstanceAtIndex(0));
+		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity1 should be completed";
+		( , , , , , state) = pi.getActivityInstanceData(pi.getActivityInstanceAtIndex(1));
+		if (state != uint8(BpmRuntime.ActivityInstanceState.COMPLETED)) return "Activity2 should be completed";
+
+		// verify process state
+		if (pi.getState() != uint8(BpmRuntime.ProcessInstanceState.COMPLETED)) return "The PI should be completed";
+
+		return SUCCESS;
 	}
 
 	/**
