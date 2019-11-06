@@ -1,4 +1,4 @@
-pragma solidity ^0.5.12;
+pragma solidity ^0.5;
 
 import "commons-collections/AbstractDataStorage.sol";
 import "commons-collections/DataStorageUtils.sol";

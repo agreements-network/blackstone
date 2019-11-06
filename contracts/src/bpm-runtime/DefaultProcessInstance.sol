@@ -1,4 +1,4 @@
-pragma solidity ^0.5.12;
+pragma solidity ^0.5;
 
 import "commons-base/ErrorsLib.sol";
 import "commons-base/BaseErrors.sol";
@@ -163,8 +163,30 @@ contract DefaultProcessInstance is AbstractVersionedArtifact(1,0,0), AbstractDel
 
     }
 
-    function triggerIntermediateEvent(bytes32 _eventId) external {
+    function triggerIntermediateEvent(bytes32 _eventInstanceId, BpmService _service) external {
+        ErrorsLib.revertIf(!self.intermediateEvents.rows[_eventInstanceId].exists,
+                ErrorsLib.INVALID_INPUT(), "ProcessInstance.triggerIntermediateEvent", "The specified target event instance ID does not exist");
 
+        BpmRuntime.IntermediateEventInstance storage instance = self.intermediateEvents.rows[_eventInstanceId].value;
+
+        ErrorsLib.revertIf(instance.timerTarget == 0,
+                ErrorsLib.INVALID_INPUT(), "ProcessInstance.triggerIntermediateEvent", "The specified target event instance ID does not have timer set");
+
+        ErrorsLib.revertIf(instance.state == BpmRuntime.ActivityInstanceState.COMPLETED,
+                ErrorsLib.INVALID_INPUT(), "ProcessInstance.triggerIntermediateEvent", "intermediate event has already fired");
+
+        ErrorsLib.revertIf(instance.timerTarget > block.timestamp,
+                ErrorsLib.INVALID_INPUT(), "ProcessInstance.triggerIntermediateEvent", "Attempt to fire intermediate event before timer expired");
+
+        instance.state = BpmRuntime.ActivityInstanceState.COMPLETED;
+        instance.completed = block.timestamp;
+
+        // mark activity as completed.
+        self.graph.activities[instance.eventId].instancesCompleted = 1;
+        self.graph.activities[instance.eventId].done = true;
+
+        // execute!
+        self.execute(_service);
     }
 
 	/**
@@ -547,10 +569,24 @@ contract DefaultProcessInstance is AbstractVersionedArtifact(1,0,0), AbstractDel
         }
     }
 
+	/**
+	 * @dev boundary and intermediate events should fire after a specific duration, which can be set as a string, e.g. "3 weeks". The conversion
+	 * to an actual point in time is done off-chain, since this can get tricky. We might need to calculate number of weekdays excluding public
+	 * holidays in a specific locale or calculate sunrise in Dallas. This is done off-chain and then this function is called with the blocktime
+	 * at which the event should fire.
+	 * @param _eventInstanceId - the event instance Id
+	 * @param _targetTime - the unix epoch (or blocktime) at which the time should fire
+	 */
     function setTimerEventTarget(bytes32 _eventInstanceId, uint _targetTime) public {
-        // @SEAN
-        // Todo: revert if targetTime already set
-        // set self.intermediateEvents.rows[_eventInstanceId].targetTime = _targetTime;
+        ErrorsLib.revertIf(!self.intermediateEvents.rows[_eventInstanceId].exists,
+                ErrorsLib.INVALID_INPUT(), "ProcessInstance.setTimerEventTarget", "The specified target event instance ID does not exist");
+
+        BpmRuntime.IntermediateEventInstance storage instance = self.intermediateEvents.rows[_eventInstanceId].value;
+
+        ErrorsLib.revertIf(instance.timerTarget != 0,
+                ErrorsLib.INVALID_INPUT(), "ProcessInstance.setTimerEventTarget", "The specified target event instance ID already has timer set");
+
+        instance.timerTarget = _targetTime;
     }
 
 	/**
@@ -587,6 +623,15 @@ contract DefaultProcessInstance is AbstractVersionedArtifact(1,0,0), AbstractDel
     }
 
 	/**
+	 * @dev Returns the number of intermediate event instances currently contained in this ProcessInstance.
+	 * Note that this number is subject to change as long as the process isntance is not completed.
+	 * @return the number of intermediate event instances
+	 */
+	function getNumberOfIntermediateEventInstances() external view returns (uint size) {
+        return self.intermediateEvents.keys.length;
+    }
+
+	/**
 	 * @dev Returns the globally unique ID of the activity instance at the specified index in the ProcessInstance.
 	 * @param _idx the index position
 	 * @return the bytes32 ID
@@ -594,6 +639,17 @@ contract DefaultProcessInstance is AbstractVersionedArtifact(1,0,0), AbstractDel
 	function getActivityInstanceAtIndex(uint _idx) external view returns (bytes32) {
         if (_idx < self.activities.keys.length) {
             return self.activities.keys[_idx];
+        }
+    }
+
+	/**
+	 * @dev Returns the globally unique ID of the activity instance at the specified index in the ProcessInstance.
+	 * @param _idx the index position
+	 * @return the bytes32 ID
+	 */
+	function getIntermediateInstanceAtIndex(uint _idx) external view returns (bytes32) {
+        if (_idx < self.intermediateEvents.keys.length) {
+            return self.intermediateEvents.keys[_idx];
         }
     }
 

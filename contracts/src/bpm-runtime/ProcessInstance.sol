@@ -1,4 +1,4 @@
-pragma solidity ^0.5.12;
+pragma solidity ^0.5;
 
 import "commons-base/OwnerTransferable.sol";
 import "commons-collections/DataStorage.sol";
@@ -61,7 +61,10 @@ contract ProcessInstance is VersionedArtifact, DataStorage, AddressScopes, Owner
     // @SEAN
     function triggerBoundaryEvent(bytes32 _activityInstanceId, bytes32 _eventId) external;
 
-    function triggerIntermediateEvent(bytes32 _eventId) external;
+	/**
+	 * @dev Once an intermediate event is ready to run due the timer expiring, this function should be called from anything off-chain
+	 */
+    function triggerIntermediateEvent(bytes32 _eventId, BpmService _service) external;
 
 	/**
 	 * @dev Completes the specified activity
@@ -245,9 +248,13 @@ contract ProcessInstance is VersionedArtifact, DataStorage, AddressScopes, Owner
      */
     function resolveOutDataLocation(bytes32 _activityInstanceId, bytes32 _dataMappingId) public view returns (address dataStorage, bytes32 dataPath);
 
-	//@SEAN
 	/**
-	 * //TODO
+	 * @dev boundary and intermediate events should fire after a specific duration, which can be set as a string, e.g. "3 weeks". The conversion
+	 * to an actual point in time is done off-chain, since this can get tricky. We might need to calculate number of weekdays excluding public
+	 * holidays in a specific locale or calculate sunrise in Dallas. This is done off-chain and then this function is called with the blocktime
+	 * at which the event should fire.
+	 * @param _eventInstanceId - the event instance Id
+	 * @param _targetTime - the unix epoch (or blocktime) at which the time should fire
 	 */
     function setTimerEventTarget(bytes32 _eventInstanceId, uint _targetTime) public;
 
@@ -268,6 +275,20 @@ contract ProcessInstance is VersionedArtifact, DataStorage, AddressScopes, Owner
      * @return the address registered when creating the process instance
      */
     function getStartedBy() external view returns (address);
+
+	/**
+	 * @dev Returns the number of intermediate event instances currently contained in this ProcessInstance.
+	 * Note that this number is subject to change as long as the process isntance is not completed.
+	 * @return the number of intermediate event instances
+	 */
+	function getNumberOfIntermediateEventInstances() external view returns (uint size);
+
+	/**
+	 * @dev Returns the globally unique ID of the activity instance at the specified index in the ProcessInstance.
+	 * @param _idx the index position
+	 * @return the bytes32 ID
+	 */
+	function getIntermediateInstanceAtIndex(uint _idx) external view returns (bytes32);
 
 	/**
 	 * @dev Returns the number of activity instances currently contained in this ProcessInstance.

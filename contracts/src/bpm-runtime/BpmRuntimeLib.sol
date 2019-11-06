@@ -1,4 +1,4 @@
-pragma solidity ^0.5.12;
+pragma solidity ^0.5;
 
 import "commons-base/ErrorsLib.sol";
 import "commons-base/BaseErrors.sol";
@@ -41,6 +41,15 @@ library BpmRuntimeLib {
         address performer,
         uint completed,
         address completedBy,
+        uint8 state
+    );
+
+    event LogIntermediateEventInstanceCreation(
+        bytes32 indexed eventId,
+        bytes32 intermediateEventId,
+        address processInstanceAddress,
+        uint created,
+        uint completed,
         uint8 state
     );
 
@@ -93,6 +102,7 @@ library BpmRuntimeLib {
     // NOTE: EVENT_ID_PROCESS_INSTANCES is also defined in ProcessInstance.sol as similar events can generate from within the PI
 	bytes32 public constant EVENT_ID_PROCESS_INSTANCES = "AN://process-instances";
 	bytes32 public constant EVENT_ID_INTERMEDIATE_EVENTS = "AN://intermediate-events";
+    bytes32 public constant EVENT_ID_TIMER_EVENTS = "AN://timer-events";
 
     function getERC165IdOrganization() internal pure returns (bytes4) {
         return (bytes4(keccak256(abi.encodePacked("addUser(address)"))) ^ 
@@ -482,33 +492,52 @@ library BpmRuntimeLib {
             ErrorsLib.INVALID_PARAMETER_STATE(), "BpmRuntimeLib.executeEvent", "The ActivityInstance for the intermediate event is not in the correct state");
         
         (BpmModel.EventType eventType, BpmModel.IntermediateEventBehavior eventBehavior, , ) = _processDefinition.getIntermediateEventGraphDetails(_eventInstance.eventId);
-        // @SEAN
-        // examine type and retrieve uint for TIMER_TIMESTAMP or string for TIMER_DURATION
-        // check constants for event definition first and use them if they exist
-        // otherwise, resolve conditional (data path) data:
+
         (bytes32 dataPath, bytes32 dataStorageId, address dataStorage, uint timestampConstant, string memory durationConstant) = _processDefinition.getTimerEventDetails(_eventInstance.eventId); 
+
         address dataStorageAddress = DataStorageUtils.resolveDataStorageAddress(dataStorageId, dataStorage, _rootDataStorage);
 
-        // Depending on eventType (timestamp vs. duration), retrieve the conditional value from the DataStorage
-        uint target = DataStorage(dataStorageAddress).getDataValueAsUint(dataPath); //or DataStorage(dataStorageAddress).getDataValueAsString(dataPath);
+        string memory timerDuration;
+        uint target;
 
-        // if we know the absolute timestamp already, fill it in
-        // _eventInstance.targetTime = target;
-        // if it's duration, then let an external oracle report it back via ProcessInstance.setTimerTarget
+        if (eventType == BpmModel.EventType.TIMER_TIMESTAMP) {
+            if (timestampConstant != 0) {
+                target = timestampConstant;
+            } else {
+                target = DataStorage(dataStorageAddress).getDataValueAsUint(dataPath);
+            }
+
+            _eventInstance.timerTarget = target;
+        } else {
+            ErrorsLib.revertIf(eventType != BpmModel.EventType.TIMER_DURATION,
+                ErrorsLib.INVALID_PARAMETER_STATE(), "BpmRuntimeLib.executeEvent", "The EventType for the intermediate event has an invalid value");
+
+            if (bytes(durationConstant).length > 0) {
+                timerDuration = durationConstant;
+            } else {
+                timerDuration = DataStorage(dataStorageAddress).getDataValueAsString(dataPath);
+            }
+        }
 
         // Emit the event for lair
-        //emit LogTimerEventCreation(...)
-        
-        // Depending on eventBehavior (catching vs. non-interrupting), the activityInstance state needs to be set
-        _eventInstance.state = BpmRuntime.ActivityInstanceState.SUSPENDED; // catching
-        // or
-        _eventInstance.state = BpmRuntime.ActivityInstanceState.COMPLETED; // non-interrupting
+        emit LogTimerEventCreation(
+            EVENT_ID_TIMER_EVENTS,
+            _eventInstance.eventId,
+            _eventInstance.id,
+            uint8(eventType),
+            uint8(eventBehavior),
+            target,
+            timerDuration
+        );
+
+        if (eventBehavior == BpmModel.IntermediateEventBehavior.CATCHING) {
+            _eventInstance.state = BpmRuntime.ActivityInstanceState.SUSPENDED;
+        } else {
+            _eventInstance.state = BpmRuntime.ActivityInstanceState.COMPLETED;
+        }
+
         _eventInstance.completed = block.timestamp;
-
-        // Missing:
-        // implementing function "triggerEvent". Note: should check if the "targetTime is set" and revert if not!
     }
-
 
     /**
      * @dev Executes the given ProcessInstance leveraging the given BpmService reference by looking for activities that are "ready" to be
@@ -564,6 +593,7 @@ library BpmRuntimeLib {
                         _processInstance.graph.activities[activityId].instancesTotal = 1;
                     }
 
+
                     bytes32 aiId; // the unique AI ID
                     for (uint j=0; j<_processInstance.graph.activities[activityId].instancesTotal; j++) {
                         aiId = createActivityInstance(_processInstance, activityId, j);
@@ -579,13 +609,13 @@ library BpmRuntimeLib {
                 }
                 // INTERMEDIATE EVENT
                 else if (elementType == BpmModel.ModelElementType.INTERMEDIATE_EVENT) {
-                    bytes32 aiId; // the unique AI ID
+                    bytes32 eiId; // the unique event instance ID
                     _processInstance.graph.activities[activityId].instancesTotal = 1;
-                    aiId = createIntermediateEventInstance(_processInstance, activityId);
-                    _service.getBpmServiceDb().addActivityInstance(aiId);
-                    executeEvent(_processInstance.intermediateEvents.rows[aiId].value, DataStorage(_processInstance.addr), _processInstance.processDefinition);
-                    if (_processInstance.intermediateEvents.rows[aiId].value.state == BpmRuntime.ActivityInstanceState.COMPLETED) {
-                        _processInstance.intermediateEvents.rows[aiId].value.completed = block.timestamp;
+                    eiId = createIntermediateEventInstance(_processInstance, activityId);
+                    _service.getBpmServiceDb().addActivityInstance(eiId);
+                    executeEvent(_processInstance.intermediateEvents.rows[eiId].value, DataStorage(_processInstance.addr), _processInstance.processDefinition);
+                    if (_processInstance.intermediateEvents.rows[eiId].value.state == BpmRuntime.ActivityInstanceState.COMPLETED) {
+                        _processInstance.intermediateEvents.rows[eiId].value.completed = block.timestamp;
                         _processInstance.graph.activities[activityId].instancesCompleted = 1;
                     }
                 }
@@ -862,27 +892,23 @@ library BpmRuntimeLib {
     function createIntermediateEventInstance(BpmRuntime.ProcessInstance storage _processInstance, bytes32 _eventId) public returns (bytes32 eiId) {
         eiId = keccak256(abi.encodePacked(_processInstance.addr, _eventId));
         uint created = block.timestamp;
-        // BpmRuntime.IntermediateEventInstance memory ei = BpmRuntime.IntermediateEventInstance({id: eiId,
-        //                                                                      activityId: _activityId,
-        //                                                                      processInstance: _processInstance.addr,
-        //                                                                      multiInstanceIndex: _index,
-        //                                                                      state: BpmRuntime.ActivityInstanceState.CREATED,
-        //                                                                      created: created,
-        //                                                                      performer: address(0),
-        //                                                                      completed: uint8(0),
-        //                                                                      completedBy: address(0)});
-        // insertOrUpdate(_processInstance.intermediateEvents, ei);
-        // emit LogItermediateEventInstanceCreation(
-        //     EVENT_ID_ACTIVITY_INSTANCES,
-        //     eiId,
-        //     _eventId,
-        //     _processInstance.addr,
-        //     created,
-        //     address(0),
-        //     uint8(0),
-        //     address(0),
-        //     uint8(BpmRuntime.ActivityInstanceState.CREATED)
-        // );
+        
+        BpmRuntime.IntermediateEventInstance memory iei = BpmRuntime.IntermediateEventInstance({id: eiId,
+                                                                                               eventId: _eventId,
+                                                                                               processInstance: _processInstance.addr,
+                                                                                               created: created,
+                                                                                               completed: 0,
+                                                                                               state: BpmRuntime.ActivityInstanceState.CREATED,
+                                                                                               timerTarget: 0});
+        insertOrUpdate(_processInstance.intermediateEvents, iei);
+        emit LogIntermediateEventInstanceCreation(
+             EVENT_ID_INTERMEDIATE_EVENTS,
+             _eventId,
+             _processInstance.addr,
+             created,
+            uint8(0),
+            uint8(BpmRuntime.ActivityInstanceState.CREATED)
+        );
     }
 
     /**

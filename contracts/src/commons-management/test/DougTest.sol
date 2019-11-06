@@ -1,4 +1,4 @@
-pragma solidity ^0.5.12;
+pragma solidity ^0.5;
 
 import "commons-management/DOUG.sol";
 import "commons-management/DefaultDoug.sol";

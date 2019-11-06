@@ -1,4 +1,4 @@
-pragma solidity ^0.5.12;
+pragma solidity ^0.5;
 
 import "commons-base/ErrorsLib.sol";
 import "commons-base/BaseErrors.sol";
@@ -223,15 +223,15 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 		}
 		// use constant value or dynamic lookup via conditional data
 		if (_timestampConstant > 0 && _eventType == BpmModel.EventType.TIMER_TIMESTAMP) {
-			graphElements.rows[_id].intermediateEvent.primitiveData.uintValue = _timestampConstant;
+			graphElements.rows[_id].intermediateEvent.timerValue.uintValue = _timestampConstant;
 		}
 		else if (bytes(_durationConstant).length > 0 && _eventType == BpmModel.EventType.TIMER_DURATION) {
-			graphElements.rows[_id].intermediateEvent.primitiveData.stringValue = _durationConstant;
+			graphElements.rows[_id].intermediateEvent.timerValue.stringValue = _durationConstant;
 		}
 		else {
-			graphElements.rows[_id].intermediateEvent.conditionalData.dataPath = _dataPath;
-			graphElements.rows[_id].intermediateEvent.conditionalData.dataStorageId = _dataStorageId;
-			graphElements.rows[_id].intermediateEvent.conditionalData.dataStorage = _dataStorage;
+			graphElements.rows[_id].intermediateEvent.timerStorage.dataPath = _dataPath;
+			graphElements.rows[_id].intermediateEvent.timerStorage.dataStorageId = _dataStorageId;
+			graphElements.rows[_id].intermediateEvent.timerStorage.dataStorage = _dataStorage;
 		}
 		graphElements.rows[_id].exists = true;
 	}
@@ -269,15 +269,15 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 		graphElements.rows[_id].boundaryEvent.eventBehavior = _eventBehavior;
 		// use constant value or dynamic lookup via conditional data
 		if (_timestampConstant > 0 && _eventType == BpmModel.EventType.TIMER_TIMESTAMP) {
-			graphElements.rows[_id].boundaryEvent.primitiveData.uintValue = _timestampConstant;
+			graphElements.rows[_id].boundaryEvent.timerValue.uintValue = _timestampConstant;
 		}
 		else if (bytes(_durationConstant).length > 0 && _eventType == BpmModel.EventType.TIMER_DURATION) {
-			graphElements.rows[_id].boundaryEvent.primitiveData.stringValue = _durationConstant;
+			graphElements.rows[_id].boundaryEvent.timerValue.stringValue = _durationConstant;
 		}
 		else {
-			graphElements.rows[_id].boundaryEvent.conditionalData.dataPath = _dataPath;
-			graphElements.rows[_id].boundaryEvent.conditionalData.dataStorageId = _dataStorageId;
-			graphElements.rows[_id].boundaryEvent.conditionalData.dataStorage = _dataStorage;
+			graphElements.rows[_id].boundaryEvent.timerStorage.dataPath = _dataPath;
+			graphElements.rows[_id].boundaryEvent.timerStorage.dataStorageId = _dataStorageId;
+			graphElements.rows[_id].boundaryEvent.timerStorage.dataStorage = _dataStorage;
 		}
 		graphElements.rows[_activityId].activity.boundaryEventIds.push(_id);
 		graphElements.rows[_id].exists = true;
@@ -875,22 +875,30 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 	}
 
 	/**
-	 * //TODO
+	 * Get the timer for a boundary event or timer event. The value can be an absolute value, in which case it is a unix time stamp, or a string,
+	 * in which case it has to be converted into a time stamp by lair. If the value is not a constant, then it has to retrieved from storage. 
+	 * @param _id the ID of the intermediate event or boundary event
+	 * @return dataPath 
+	 * @return dataStorageId
+	 * @return dataStorage
+	 * @return timestampConstant - if this is non-zero it denotes the blocktime when the timer should fire
+	 * @return durationConstant - if this is not an empty string then this is duration, of the form e.g. "3 weeks".
 	 */
 	function getTimerEventDetails(bytes32 _id) external view returns (bytes32 dataPath, bytes32 dataStorageId, address dataStorage, uint timestampConstant, string memory durationConstant) {
 		if (graphElements.rows[_id].elementType == BpmModel.ModelElementType.INTERMEDIATE_EVENT) {
-			dataPath = graphElements.rows[_id].intermediateEvent.conditionalData.dataPath;
-			dataStorageId = graphElements.rows[_id].intermediateEvent.conditionalData.dataStorageId;
-			dataStorage = graphElements.rows[_id].intermediateEvent.conditionalData.dataStorage;
-			timestampConstant = graphElements.rows[_id].intermediateEvent.primitiveData.uintValue;
-			durationConstant = graphElements.rows[_id].intermediateEvent.primitiveData.stringValue;
+			dataStorage = graphElements.rows[_id].intermediateEvent.timerStorage.dataStorage;
+			dataPath = graphElements.rows[_id].intermediateEvent.timerStorage.dataPath;
+			dataStorage = graphElements.rows[_id].intermediateEvent.timerStorage.dataStorage;
+			dataStorageId = graphElements.rows[_id].intermediateEvent.timerStorage.dataStorageId;
+			timestampConstant = graphElements.rows[_id].intermediateEvent.timerValue.uintValue;
+			durationConstant = graphElements.rows[_id].intermediateEvent.timerValue.stringValue;
 		}
 		else if (graphElements.rows[_id].elementType == BpmModel.ModelElementType.BOUNDARY_EVENT) {
-			dataPath = graphElements.rows[_id].boundaryEvent.conditionalData.dataPath;
-			dataStorageId = graphElements.rows[_id].boundaryEvent.conditionalData.dataStorageId;
-			dataStorage = graphElements.rows[_id].boundaryEvent.conditionalData.dataStorage;
-			timestampConstant = graphElements.rows[_id].boundaryEvent.primitiveData.uintValue;
-			durationConstant = graphElements.rows[_id].boundaryEvent.primitiveData.stringValue;
+			dataPath = graphElements.rows[_id].boundaryEvent.timerStorage.dataPath;
+			dataStorageId = graphElements.rows[_id].boundaryEvent.timerStorage.dataStorageId;
+			dataStorage = graphElements.rows[_id].boundaryEvent.timerStorage.dataStorage;
+			timestampConstant = graphElements.rows[_id].boundaryEvent.timerValue.uintValue;
+			durationConstant = graphElements.rows[_id].boundaryEvent.timerValue.stringValue;
 		}
 	}
 
