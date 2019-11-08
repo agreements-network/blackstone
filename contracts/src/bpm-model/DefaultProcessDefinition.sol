@@ -886,7 +886,6 @@ contract DefaultProcessDefinition is AbstractVersionedArtifact(1,0,0), AbstractD
 	 */
 	function getTimerEventDetails(bytes32 _id) external view returns (bytes32 dataPath, bytes32 dataStorageId, address dataStorage, uint timestampConstant, string memory durationConstant) {
 		if (graphElements.rows[_id].elementType == BpmModel.ModelElementType.INTERMEDIATE_EVENT) {
-			dataStorage = graphElements.rows[_id].intermediateEvent.timerStorage.dataStorage;
 			dataPath = graphElements.rows[_id].intermediateEvent.timerStorage.dataPath;
 			dataStorage = graphElements.rows[_id].intermediateEvent.timerStorage.dataStorage;
 			dataStorageId = graphElements.rows[_id].intermediateEvent.timerStorage.dataStorageId;

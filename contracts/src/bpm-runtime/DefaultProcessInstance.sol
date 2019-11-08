@@ -165,18 +165,18 @@ contract DefaultProcessInstance is AbstractVersionedArtifact(1,0,0), AbstractDel
 
     function triggerIntermediateEvent(bytes32 _eventInstanceId, BpmService _service) external {
         ErrorsLib.revertIf(!self.intermediateEvents.rows[_eventInstanceId].exists,
-                ErrorsLib.INVALID_INPUT(), "ProcessInstance.triggerIntermediateEvent", "The specified target event instance ID does not exist");
+                ErrorsLib.RESOURCE_NOT_FOUND(), "ProcessInstance.triggerIntermediateEvent", "The specified target event instance ID does not exist");
 
         BpmRuntime.IntermediateEventInstance storage instance = self.intermediateEvents.rows[_eventInstanceId].value;
 
         ErrorsLib.revertIf(instance.timerTarget == 0,
-                ErrorsLib.INVALID_INPUT(), "ProcessInstance.triggerIntermediateEvent", "The specified target event instance ID does not have timer set");
+                ErrorsLib.INVALID_STATE(), "ProcessInstance.triggerIntermediateEvent", "The specified target event instance ID does not have timer set");
 
         ErrorsLib.revertIf(instance.state == BpmRuntime.ActivityInstanceState.COMPLETED,
-                ErrorsLib.INVALID_INPUT(), "ProcessInstance.triggerIntermediateEvent", "intermediate event has already fired");
+                ErrorsLib.INVALID_STATE(), "ProcessInstance.triggerIntermediateEvent", "intermediate event has already fired");
 
         ErrorsLib.revertIf(instance.timerTarget > block.timestamp,
-                ErrorsLib.INVALID_INPUT(), "ProcessInstance.triggerIntermediateEvent", "Attempt to fire intermediate event before timer expired");
+                ErrorsLib.INVALID_STATE(), "ProcessInstance.triggerIntermediateEvent", "Attempt to fire intermediate event before timer expired");
 
         instance.state = BpmRuntime.ActivityInstanceState.COMPLETED;
         instance.completed = block.timestamp;
@@ -579,12 +579,12 @@ contract DefaultProcessInstance is AbstractVersionedArtifact(1,0,0), AbstractDel
 	 */
     function setTimerEventTarget(bytes32 _eventInstanceId, uint _targetTime) public {
         ErrorsLib.revertIf(!self.intermediateEvents.rows[_eventInstanceId].exists,
-                ErrorsLib.INVALID_INPUT(), "ProcessInstance.setTimerEventTarget", "The specified target event instance ID does not exist");
+                ErrorsLib.RESOURCE_NOT_FOUND(), "ProcessInstance.setTimerEventTarget", "The specified target event instance ID does not exist");
 
         BpmRuntime.IntermediateEventInstance storage instance = self.intermediateEvents.rows[_eventInstanceId].value;
 
         ErrorsLib.revertIf(instance.timerTarget != 0,
-                ErrorsLib.INVALID_INPUT(), "ProcessInstance.setTimerEventTarget", "The specified target event instance ID already has timer set");
+                ErrorsLib.OVERWRITE_NOT_ALLOWED(), "ProcessInstance.setTimerEventTarget", "The specified target event instance ID already has timer set");
 
         instance.timerTarget = _targetTime;
     }
