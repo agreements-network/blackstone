@@ -609,7 +609,7 @@ library BpmRuntimeLib {
                 else if (elementType == BpmModel.ModelElementType.INTERMEDIATE_EVENT) {
                     bytes32 eiId; // the unique event instance ID
                     _processInstance.graph.activities[activityId].instancesTotal = 1;
-                    eiId = createIntermediateEventInstance(_processInstance, activityId, _processInstance.processDefinition);
+                    eiId = createIntermediateEventInstance(_processInstance, activityId);
                     _service.getBpmServiceDb().addActivityInstance(eiId);
                     executeEvent(_processInstance.intermediateEvents.rows[eiId].value, DataStorage(_processInstance.addr), _processInstance.processDefinition);
                     if (_processInstance.intermediateEvents.rows[eiId].value.state == BpmRuntime.ActivityInstanceState.COMPLETED) {
@@ -887,7 +887,7 @@ library BpmRuntimeLib {
         );
     }
 
-    function createIntermediateEventInstance(BpmRuntime.ProcessInstance storage _processInstance, bytes32 _eventId, ProcessDefinition _processDefinition) public returns (bytes32 eiId) {
+    function createIntermediateEventInstance(BpmRuntime.ProcessInstance storage _processInstance, bytes32 _eventId) public returns (bytes32 eiId) {
         eiId = keccak256(abi.encodePacked(_processInstance.addr, _eventId));
         uint created = block.timestamp;
         
@@ -900,7 +900,7 @@ library BpmRuntimeLib {
                                                                                                timerTarget: 0});
         insertOrUpdate(_processInstance.intermediateEvents, iei);
 
-        (BpmModel.EventType eventType, BpmModel.IntermediateEventBehavior eventBehavior, , ) = _processDefinition.getIntermediateEventGraphDetails(_eventId);
+        (BpmModel.EventType eventType, BpmModel.IntermediateEventBehavior eventBehavior, , ) = _processInstance.processDefinition.getIntermediateEventGraphDetails(_eventId);
 
         emit LogIntermediateEventInstanceCreation(
              EVENT_ID_INTERMEDIATE_EVENTS,
