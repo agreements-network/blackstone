@@ -1,4 +1,4 @@
-pragma solidity ^0.5.12;
+pragma solidity ^0.5;
 
 import "bpm-model/BpmModel.sol";
 import "bpm-model/ProcessDefinition.sol";
@@ -96,8 +96,13 @@ library BpmRuntime {
     // tokens which allows the creation of dedicated transitions that respond only to a specific marker ID.
     struct ActivityNode {
         Node node;
+        // Ready means that the activity is ready to executed
         bool ready;
+        // Done means that the activity is completed
         bool done;
+        // ActivityNode is used in a mapping; when reading non-existent entry is accessed,
+        // solidity will give you an ActivityNode with zeroed fields. The field exists
+        // is set to true if there is actually an entry there.
         bool exists;
         uint instancesTotal; // only used for tasks
         uint instancesCompleted; // only used for tasks
