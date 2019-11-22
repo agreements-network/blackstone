@@ -408,7 +408,13 @@ contract ProcessDefinition is VersionedArtifact, Bytes32Identifiable {
 	function getBoundaryEventGraphDetails(bytes32 _id) external view returns (BpmModel.EventType eventType, BpmModel.BoundaryEventBehavior eventBehavior, bytes32 successor);
 
 	/**
-	 * //TODO
+	 * @dev Returns details about the timer expiry for boundary events and inter
+	 * @param _id the ID of the timer event
+	 * @return dataPath - a data path (key) to use for data lookup on a DataStorage to find the escalation target
+	 * @return dataStorageId - an optional key to identify a DataStorage as basis for the data path to find the escalation target
+	 * @return dataStorage - an optional address of a DataStorage as basis for the data path to find the escalation target
+	 * @return timeStampConstant - unix epoch time at which this timer expires if absolute timer
+	 * @return durationConstant - duration after which this timer should expire 
 	 */
 	function getTimerEventDetails(bytes32 _id) external view returns (bytes32 dataPath, bytes32 dataStorageId, address dataStorage, uint timestampConstant, string memory durationConstant);
 

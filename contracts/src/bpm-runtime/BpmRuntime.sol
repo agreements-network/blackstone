@@ -11,6 +11,7 @@ library BpmRuntime {
 	
 	enum ProcessInstanceState {CREATED,ABORTED,ACTIVE,COMPLETED}
 	enum ActivityInstanceState {CREATED,ABORTED,COMPLETED,INTERRUPTED,SUSPENDED,APPLICATION}
+    enum EventBoundaryInstanceState {CREATED,ARMED,FIRED,COMPLETED}
     enum TransitionType {NONE,XOR,OR,AND}
 	
 	struct ProcessInstance {
@@ -22,6 +23,7 @@ library BpmRuntime {
         ProcessGraph graph;
         ActivityInstanceMap activities;
         IntermediateEventInstanceMap intermediateEvents;
+        BoundaryEventInstanceMap boundaryEvents;
 	}
 	
 	struct ActivityInstance {
@@ -65,6 +67,25 @@ library BpmRuntime {
 
     struct IntermediateEventInstanceMap {
         mapping(bytes32 => IntermediateEventElement) rows;
+        bytes32[] keys;
+    }
+
+    struct BoundaryEventInstance {
+        bytes32 id;
+        bytes32 boundaryId;
+        bytes32 activityInstanceId;
+        EventBoundaryInstanceState state;
+        uint timerTarget;
+    }
+
+    struct BoundaryEventElement {
+        bool exists;
+        uint keyIdx;
+        BoundaryEventInstance value;
+    }
+
+    struct BoundaryEventInstanceMap {
+        mapping(bytes32 => BoundaryEventElement) rows;
         bytes32[] keys;
     }
 

@@ -59,7 +59,7 @@ contract ProcessInstance is VersionedArtifact, DataStorage, AddressScopes, Owner
 	function abort() external;
 
     // @SEAN
-    function triggerBoundaryEvent(bytes32 _activityInstanceId, bytes32 _eventId) external;
+    function triggerBoundaryEvent(bytes32 _boundaryEventId) external;
 
 	/**
 	 * @dev Once an intermediate event is ready to run due the timer expiring, this function should be called from anything off-chain

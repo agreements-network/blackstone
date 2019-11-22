@@ -157,10 +157,25 @@ contract DefaultProcessInstance is AbstractVersionedArtifact(1,0,0), AbstractDel
         notifyProcessStateChange();
     }
 
-    // @SEAN
     // both the following functions rely on an understanding of how to handle timer escalations
-    function triggerBoundaryEvent(bytes32 _activityInstanceId, bytes32 _eventId) external {
+    function triggerBoundaryEvent(bytes32 _boundaryInstanceId) external {
+        ErrorsLib.revertIf(!self.boundaryEvents.rows[_boundaryInstanceId].exists,
+                ErrorsLib.RESOURCE_NOT_FOUND(), "ProcessInstance.triggerIntermediateEvent", "The specified target event instance ID does not exist");
 
+        BpmRuntime.BoundaryEventInstance storage instance = self.boundaryEvents.rows[_boundaryInstanceId].value;
+
+        ErrorsLib.revertIf(instance.timerTarget == 0,
+                ErrorsLib.INVALID_STATE(), "ProcessInstance.triggerIntermediateEvent", "The specified target event instance ID does not have timer set");
+
+        ErrorsLib.revertIf(instance.state != BpmRuntime.EventBoundaryInstanceState.ARMED,
+                ErrorsLib.INVALID_STATE(), "ProcessInstance.triggerIntermediateEvent", "intermediate event has already fired");
+
+        ErrorsLib.revertIf(instance.timerTarget > block.timestamp,
+                ErrorsLib.INVALID_STATE(), "ProcessInstance.triggerIntermediateEvent", "Attempt to fire intermediate event before timer expired");
+
+        instance.state = BpmRuntime.EventBoundaryInstanceState.COMPLETED;
+
+        // FIME: execute actions!
     }
 
     function triggerIntermediateEvent(bytes32 _eventInstanceId, BpmService _service) external {
@@ -585,6 +600,26 @@ contract DefaultProcessInstance is AbstractVersionedArtifact(1,0,0), AbstractDel
 
         ErrorsLib.revertIf(instance.timerTarget != 0,
                 ErrorsLib.OVERWRITE_NOT_ALLOWED(), "ProcessInstance.setTimerEventTarget", "The specified target event instance ID already has timer set");
+
+        instance.timerTarget = _targetTime;
+    }
+
+	/**
+	 * @dev boundary and intermediate events should fire after a specific duration, which can be set as a string, e.g. "3 weeks". The conversion
+	 * to an actual point in time is done off-chain, since this can get tricky. We might need to calculate number of weekdays excluding public
+	 * holidays in a specific locale or calculate sunrise in Dallas. This is done off-chain and then this function is called with the blocktime
+	 * at which the event should fire.
+	 * @param _boundaryInstanceId - the boundary event instance Id
+	 * @param _targetTime - the unix epoch (or blocktime) at which the time should fire
+	 */
+    function setTimerBoundaryTarget(bytes32 _boundaryInstanceId, uint _targetTime) public {
+        ErrorsLib.revertIf(!self.boundaryEvents.rows[_boundaryInstanceId].exists,
+                ErrorsLib.RESOURCE_NOT_FOUND(), "ProcessInstance.setTimerBoundaryTarget", "The specified target event instance ID does not exist");
+
+        BpmRuntime.BoundaryEventInstance storage instance = self.boundaryEvents.rows[_boundaryInstanceId].value;
+
+        ErrorsLib.revertIf(instance.timerTarget != 0,
+                ErrorsLib.OVERWRITE_NOT_ALLOWED(), "ProcessInstance.setTimerBoundaryTarget", "The specified target event instance ID already has timer set");
 
         instance.timerTarget = _targetTime;
     }
