@@ -140,7 +140,18 @@ class Contracts {
 
     const modules = utils.getArrayFromString(CONTRACTS);
     log.info(`Detected ${modules.length} contract modules to be loaded from DOUG: ${modules}`);
-    await Promise.all(modules.map(m => appManager.loadContract(m)));
+
+    // When performing a restore executing these concurrently (i.e. in arbitrary order) would cause a ERR600 on first
+    // run and work on second run. This is a workaroudn that can be scrapped once that behaviour is understood.
+    // await Promise.all(modules.map(m => appManager.loadContract(m)));
+    for (const m of modules) {
+      try {
+        await appManager.loadContract(m);
+        console.log(`${m} loaded`);
+      } catch (err) {
+        throw new Error(`error loading module ${m}: ${err}`);
+      }
+    }
 
     // Lastly, ensure Ecosystem setup
     // Resolve the Ecosystem address for this ContractsManager
