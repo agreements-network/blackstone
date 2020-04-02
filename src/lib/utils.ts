@@ -46,8 +46,7 @@ export async function CallOnBehalfOf(client: Client, userAddress: string, target
 export async function GetFromNameRegistry(client: Client, name: string) {
     return new Promise<string | undefined>((resolve, reject) => {
         client.namereg.get(name, (err, exec) => {
-            err ? err.code === grpc.status.NOT_FOUND ? resolve(undefined) : reject(err) 
-                : resolve(exec.getData());
+            err ? resolve(undefined):  resolve(exec.getData());
         });
     });
 }
