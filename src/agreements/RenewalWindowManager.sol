@@ -11,6 +11,11 @@ import "agreements/Renewable.sol";
 
 contract RenewalWindowManager is Application {
 
+    /**
+     * @dev This event also emits the extendExpirationBy offset which
+     * must be used to calculate the next expiration timestamp and 
+     * included as an argument to the terminateRenewalWindow() call.
+     */
     event LogRenewalWindowCloseOffset(
         bytes32 indexed eventURN,
         bytes32 activityInstanceId,
@@ -19,15 +24,7 @@ contract RenewalWindowManager is Application {
         address processInstanceAddress,
         address performer,
         int scheduledFor,
-        string scheduledForOffset
-    );
-
-    event LogAgreementExpirationTimestampRequest(
-        bytes32 indexed eventURN,
-        bytes32 activityInstanceId,
-        bytes32 activityId,
-        address agreementAddress,
-        address processInstanceAddress,
+        string scheduledForOffset,
         int currentExpiration,
         string extendExpirationBy
     );
@@ -107,6 +104,9 @@ contract RenewalWindowManager is Application {
 
         emitFranchiseeDetails(_piAddress, agreement);
 
+        string memory extensionOffset;
+        ( , , , , extensionOffset) = Renewable(agreement).getRenewalTerms();
+
         emit LogRenewalWindowCloseOffset(
             EVENT_ID_RENEWAL_WINDOW_MANAGER,
             _activityInstanceId,
@@ -115,44 +115,14 @@ contract RenewalWindowManager is Application {
             _piAddress,
             _txPerformer,
             expirationDate,
-            closeOffset
-        );
-
-        emitExpirationTimestampRequest(
-            _activityInstanceId,
-            _activityId,
-            agreement,
-            _piAddress,
-            expirationDate
+            closeOffset,
+            expirationDate,
+            extensionOffset
         );
         
         activityParentMap[_activityInstanceId].processInstanceAddress = _piAddress;
         activityParentMap[_activityInstanceId].agreementAddress = agreement;
         activityParentMap[_activityInstanceId].exists = true;
-    }
-
-    /**
-     * Emits a request for an external system to calculate the next expiration date from the given
-     * scheduledFor and scheduledForOffset values
-     */
-    function emitExpirationTimestampRequest(
-        bytes32 _activityInstanceId, 
-        bytes32 _activityId,
-        address _agreement,
-        address _piAddress,
-        int _expirationDate
-    ) public {
-        string memory extensionOffset;
-        ( , , , , extensionOffset) = Renewable(_agreement).getRenewalTerms();
-        emit LogAgreementExpirationTimestampRequest(
-            EVENT_ID_RENEWAL_WINDOW_MANAGER,
-            _activityInstanceId,
-            _activityId,
-            _agreement,
-            _piAddress,
-            _expirationDate,
-            extensionOffset
-        );
     }
 
     /**

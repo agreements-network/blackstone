@@ -2,6 +2,7 @@
 
 ## Release History
 
+- Version [2.0.0](#v2.0.1)
 - Version [2.0.0](#v2.0.0)
 - Version [1.2.0](#v1.2.0)
 - Version [1.1.0](#v1.1.0)
@@ -15,6 +16,12 @@
 - Version [0.6.0](#v0.6.0)
 - Version [0.5.2](#v0.5.2)
 - Version [0.5.1](#v0.5.1)
+
+## <a name="v2.0.1">Release 2.0.1</a>
+
+### Changed
+
+- Merged two renewal events
 
 ## <a name="v2.0.0">Release 2.0.0</a>
 
