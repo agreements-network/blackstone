@@ -206,7 +206,8 @@ contract DefaultActiveAgreement is AbstractVersionedArtifact(1,6,0), AbstractAct
 		address agrOwner = this.getOwner();
 		bool authorized = agrOwner == msg.sender;
 		if (!authorized && ERC165Utils.implementsInterface(agrOwner, Governance.ERC165_ID_Organization())) {
-            authorized = Organization(agrOwner).authorizeUser(msg.sender, ""); //checking against an empty scope! See function docs above.
+            // TODO: Remove marker for empty scope after (address,bytes32) signature handling fixed
+            authorized = Organization(agrOwner).authorizeUser(msg.sender, "EMPTY_SCOPE"); //checking against an empty scope! See function docs above.
 		}
         ErrorsLib.revertIf(!authorized, ErrorsLib.UNAUTHORIZED(),
             "DefaultActiveAgreement.redact()", "Only the agreement owner may request redaction");

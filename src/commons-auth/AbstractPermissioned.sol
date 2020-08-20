@@ -60,11 +60,9 @@ contract AbstractPermissioned is Permissioned {
                 break;
             }
             else if (ERC165Utils.implementsInterface(holder, Governance.ERC165_ID_Organization())) {
-                bytes32 scope;
+                bytes32 scope = "EMPTY_SCOPE"; // TODO: Remove marker for empty scope after (address,bytes32) signature handling fixed
                 if (ERC165Utils.implementsInterface(address(this), Collections.ERC165_ID_Address_Scopes())) {
                     scope = AddressScopes(address(this)).resolveAddressScope(holder, _context, DataStorage(address(this)));
-                } else {
-                    scope = Organization(holder).getOrganizationKey();
                 }
                 if (Organization(holder).authorizeUser(msg.sender, scope)) {
                   authorized = true;

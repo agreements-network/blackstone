@@ -39,14 +39,11 @@ contract DefaultOrganization is AbstractVersionedArtifact(1,1,0), AbstractDelega
 	 * @dev Initializes this DefaultOrganization with the provided list of initial approvers. This function replaces the
 	 * contract constructor, so it can be used as the delegate target for an ObjectProxy.
 	 * If the approvers list is empty, the msg.sender is registered as an approver for this Organization.
-	 * Also, a default department is automatically created which cannot be removed as it serves as the catch-all
-	 * for authorizations that cannot otherwise be matched with existing departments.
 	 * REVERTS if:
 	 * - the contract had already been initialized before
 	 * @param _initialApprovers an array of addresses that should be registered as approvers for this Organization
-	 * @param _defaultDepartmentId an optional ID for the default department of this organization
 	 */
-	function initialize(address[] calldata _initialApprovers, bytes32 _defaultDepartmentId)
+	function initialize(address[] calldata _initialApprovers)
 		external
 		pre_post_initialize
 	{
@@ -57,19 +54,11 @@ contract DefaultOrganization is AbstractVersionedArtifact(1,1,0), AbstractDelega
 		else {
 			approvers = _initialApprovers;
 		}
-		// creating the default department
-		if (_defaultDepartmentId != "") {
-			self.defaultDepartmentId = _defaultDepartmentId;
-		} else {
-			self.defaultDepartmentId = "DEFAULT_DEPARTMENT";
-		}
-		addDepartment(self.defaultDepartmentId);
 		addInterfaceSupport(ERC165_ID_Organization);
 		emit LogOrganizationCreation(
 			EVENT_ID_ORGANIZATION_ACCOUNTS,
 			address(this),
-			approvers.length,
-			getOrganizationKey()
+			approvers.length
 		);
         for (uint i=0; i<approvers.length; i++) {
             emit LogOrganizationApproverUpdate(
@@ -102,12 +91,12 @@ contract DefaultOrganization is AbstractVersionedArtifact(1,1,0), AbstractDelega
 	}
 
 	/**
-	 * @dev Removes the department with the specified ID, if it exists and is not the defaultDepartmentId.
+	 * @dev Removes the department with the specified ID, if it exists.
 	 * @param _depId a department ID
 	 * @return true if a department with that ID existed and was successfully removed, false otherwise
 	 */
 	function removeDepartment(bytes32 _depId) external returns (bool) {
-		if (self.departments[_depId].exists && _depId != self.defaultDepartmentId) {
+		if (self.departments[_depId].exists) {
 			uint256 depKeyIdx = self.departments[_depId].keyIdx;
 			bytes32 swapKey = Mappings.deleteInKeys(self.departmentKeys, depKeyIdx);
 			if (swapKey != "") {
@@ -139,14 +128,6 @@ contract DefaultOrganization is AbstractVersionedArtifact(1,1,0), AbstractDelega
 
 	function departmentExists(bytes32 _id) external view returns (bool) {
 		return self.departments[_id].exists;
-	}
-
-	/**
-	 * @dev Returns the ID of this Organization's default department
-	 * @return the ID of the default department
-	 */
-	function getDefaultDepartmentId() external view returns (bytes32) {
-		return self.defaultDepartmentId;
 	}
 
 	/**
@@ -271,7 +252,7 @@ contract DefaultOrganization is AbstractVersionedArtifact(1,1,0), AbstractDelega
             emit LogOrganizationUserUpdate(
                 EVENT_ID_ORGANIZATION_USERS,
                 address(this),
-				_userAccount
+				        _userAccount
             );
 		}
 		return true;
@@ -302,24 +283,22 @@ contract DefaultOrganization is AbstractVersionedArtifact(1,1,0), AbstractDelega
 
 	/**
 	 * @dev Adds the specified user to the organization if they aren't already registered, then adds the user to the department if they aren't already in it.
-	 * An empty department ID will result in the user being added to the default department.
 	 * This function guarantees that the user is both a member of the organization as well as the specified department, if it returns true.
 	 * @param _userAccount the user to add
 	 * @param _department department id to which the user should be added
 	 * @return true if successfully added, false otherwise (e.g. if the department does not exist or if the user account address is empty)
 	 */
 	function addUserToDepartment(address _userAccount, bytes32 _department) external returns (bool) {
-		bytes32 targetDepartment = (_department == "") ? self.defaultDepartmentId : _department;
-		if (!self.departments[targetDepartment].exists || _userAccount == address(0)) {
+		if (!self.departments[_department].exists || _userAccount == address(0)) {
 			return false;
 		}
 		addUser(_userAccount);
-		if (!self.departments[targetDepartment].users.exists(_userAccount)) {
-			self.departments[targetDepartment].users.insert(_userAccount, true);
+		if (!self.departments[_department].users.exists(_userAccount)) {
+			self.departments[_department].users.insert(_userAccount, true);
 			emit LogDepartmentUserUpdate(
                 EVENT_ID_DEPARTMENT_USERS,
                 address(this),
-				targetDepartment,
+				_department,
 				_userAccount
             );
 		}
@@ -350,33 +329,18 @@ contract DefaultOrganization is AbstractVersionedArtifact(1,1,0), AbstractDelega
 	 * @dev Returns whether the given user account is authorized within this Organization.
 	 * The optional department/role identifier can be used to provide an additional authorization scope
 	 * against which to authorize the user. The following special cases exist:
-	 * 1. If the provided department matches the keccak256 hash of the address of this organization, the user
-	 * is regarded as authorized, if belonging to this organization (without having to be associated with a
-	 * 2. If the department is empty or if it is an unknown (non-existent) department, the user will be evaluated
-	 * against the DEFAULT department.
-	 * particular department).
+	 * 1. If the department is empty, any user within the organization is authorized
+	 * 2. If the department is an unknown (non-existent) department, no user is authorized
 	 * @param _userAccount the user account
 	 * @param _department an optional department/role context
 	 * @return true if authorized, false otherwise
 	 */
 	function authorizeUser(address _userAccount, bytes32 _department) external view returns (bool) {
-		if (_department == getOrganizationKey()) {
-			return users.exists(_userAccount);
-		}
-		else if (_department == "" || !self.departments[_department].exists) {
-			return self.departments[self.defaultDepartmentId].users.exists(_userAccount);
-		}
-		else {
-			return self.departments[_department].users.exists(_userAccount);
-		}			
+    if (_department == "EMPTY_SCOPE") return users.exists(_userAccount);
+    return self.departments[_department].exists && self.departments[_department].users.exists(_userAccount);
 	}
 
-  function getOrganizationKey() public view returns (bytes32) {
-    return keccak256(abi.encodePacked(address(this)));
-  }
-
-  function getOrganizationDetails() external view returns (uint numberOfApprovers, bytes32 organizationKey) {
-    organizationKey = getOrganizationKey();
+  function getOrganizationDetails() external view returns (uint numberOfApprovers) {
     numberOfApprovers = approvers.length;
   }
 }

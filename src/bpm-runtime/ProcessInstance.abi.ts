@@ -47,6 +47,12 @@ export module ProcessInstance {
         LogOwnerChanged(callback: (err: Error, event: any) => void): Readable { return this.client.listen("LogOwnerChanged", this.address, callback); }
         LogProcessInstanceCreation(callback: (err: Error, event: any) => void): Readable { return this.client.listen("LogProcessInstanceCreation", this.address, callback); }
         LogProcessInstanceStateUpdate(callback: (err: Error, event: any) => void): Readable { return this.client.listen("LogProcessInstanceStateUpdate", this.address, callback); }
+        EMPTY_SCOPE() {
+            const data = Encode(this.client).EMPTY_SCOPE();
+            return Call<Tx, [Buffer]>(this.client, this.address, data, true, (exec: Uint8Array) => {
+                return Decode(this.client, exec).EMPTY_SCOPE();
+            });
+        }
         ERC165_ID_Address_Scopes() {
             const data = Encode(this.client).ERC165_ID_Address_Scopes();
             return Call<Tx, [Buffer]>(this.client, this.address, data, true, (exec: Uint8Array) => {
@@ -628,6 +634,7 @@ export module ProcessInstance {
         }
     }
     export const Encode = <Tx>(client: Provider<Tx>) => { return {
+        EMPTY_SCOPE: () => { return client.encode("F6EC229E", []); },
         ERC165_ID_Address_Scopes: () => { return client.encode("BD9E0660", []); },
         ERC165_ID_VERSIONED_ARTIFACT: () => { return client.encode("E10533C6", []); },
         EVENT_ID_DATA_STORAGE: () => { return client.encode("D42EA976", []); },
@@ -722,6 +729,7 @@ export module ProcessInstance {
         triggerIntermediateEvent: (_eventInstanceId: Buffer, _service: string) => { return client.encode("79EA5A6E", ["bytes32", "address"], _eventInstanceId, _service); }
     }; };
     export const Decode = <Tx>(client: Provider<Tx>, data: Uint8Array) => { return {
+        EMPTY_SCOPE: (): [Buffer] => { return client.decode(data, ["bytes32"]); },
         ERC165_ID_Address_Scopes: (): [Buffer] => { return client.decode(data, ["bytes4"]); },
         ERC165_ID_VERSIONED_ARTIFACT: (): [Buffer] => { return client.decode(data, ["bytes4"]); },
         EVENT_ID_DATA_STORAGE: (): [Buffer] => { return client.decode(data, ["bytes32"]); },

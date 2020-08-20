@@ -24,10 +24,9 @@ contract ParticipantsManager is ObjectFactory, Upgradeable {
 	/**
 	 * @dev Creates and adds a new Organization with the specified parameters
 	 * @param _initialApprovers the initial owners/admins of the Organization.
-	 * @param _defaultDepartmentId an optional custom name/label for the default department of this organization.
 	 * @return error code and the address of the newly created organization, if successful
 	 */
-    function createOrganization(address[] calldata _initialApprovers, bytes32 _defaultDepartmentId) external returns (uint, address);
+    function createOrganization(address[] calldata _initialApprovers) external returns (uint, address);
 
     /**
      * @dev Indicates whether the specified UserAccount exists in this ParticipantsManager
@@ -61,7 +60,7 @@ contract ParticipantsManager is ObjectFactory, Upgradeable {
 	 * @param _organization the address of an organization
 	 * @return the organization's ID and name
 	 */
-    function getOrganizationData(address _organization) external view returns (uint numApprovers, bytes32 organizationKey);
+    function getOrganizationData(address _organization) external view returns (uint numApprovers);
 
     function departmentExists(address _organization, bytes32 _departmentId) external view returns (bool);
 

@@ -70,8 +70,8 @@ export module ParticipantsManager {
                 return Decode(this.client, exec).compareArtifactVersion();
             });
         }
-        createOrganization(_initialApprovers: string[], _defaultDepartmentId: Buffer) {
-            const data = Encode(this.client).createOrganization(_initialApprovers, _defaultDepartmentId);
+        createOrganization(_initialApprovers: string[]) {
+            const data = Encode(this.client).createOrganization(_initialApprovers);
             return Call<Tx, [number, string]>(this.client, this.address, data, false, (exec: Uint8Array) => {
                 return Decode(this.client, exec).createOrganization();
             });
@@ -204,7 +204,6 @@ export module ParticipantsManager {
             const data = Encode(this.client).getOrganizationData(_organization);
             return Call<Tx, {
                 numApprovers: number;
-                organizationKey: Buffer;
             }>(this.client, this.address, data, true, (exec: Uint8Array) => {
                 return Decode(this.client, exec).getOrganizationData();
             });
@@ -264,7 +263,7 @@ export module ParticipantsManager {
             if (typeof _version === "string")
                 return client.encode("78BC0B0D", ["uint8[3]"], _version);
         },
-        createOrganization: (_initialApprovers: string[], _defaultDepartmentId: Buffer) => { return client.encode("39CB0623", ["address[]", "bytes32"], _initialApprovers, _defaultDepartmentId); },
+        createOrganization: (_initialApprovers: string[]) => { return client.encode("0EC8D39A", ["address[]"], _initialApprovers); },
         createUserAccount: (_id: Buffer, _owner: string, _ecosystem: string) => { return client.encode("C392DF6B", ["bytes32", "address", "address"], _id, _owner, _ecosystem); },
         departmentExists: (_organization: string, _departmentId: Buffer) => { return client.encode("AB8EC038", ["address", "bytes32"], _organization, _departmentId); },
         getApproverAtIndex: (_organization: string, _pos: number) => { return client.encode("3DAF56B8", ["address", "uint256"], _organization, _pos); },
@@ -377,10 +376,9 @@ export module ParticipantsManager {
         },
         getOrganizationData: (): {
             numApprovers: number;
-            organizationKey: Buffer;
         } => {
-            const [numApprovers, organizationKey] = client.decode(data, ["uint256", "bytes32"]);
-            return { numApprovers: numApprovers, organizationKey: organizationKey };
+            const [numApprovers] = client.decode(data, ["uint256"]);
+            return { numApprovers: numApprovers };
         },
         getUserAccountsSize: (): {
             size: number;

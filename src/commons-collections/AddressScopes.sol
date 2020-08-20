@@ -21,6 +21,8 @@ contract AddressScopes {
 	);
 
 	bytes32 public constant EVENT_ID_ENTITIES_ADDRESS_SCOPES = "AN://entities/address-scopes";
+   // TODO: Remove marker for empty scope after (address,bytes32) signature handling fixed
+	bytes32 public constant EMPTY_SCOPE = "EMPTY_SCOPE";
 
   // The ERC165 ID only comprises the core Address Scopes functions
 	bytes4 public constant ERC165_ID_Address_Scopes = bytes4(keccak256(abi.encodePacked("setAddressScope(address,bytes32,bytes32,bytes32,bytes32,address)"))) ^

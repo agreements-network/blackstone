@@ -1017,12 +1017,11 @@ export class Contracts {
             .migrateUserAccount(userAddress, DecodeHex(migrateFromId), DecodeHex(migrateToId));
     }
 
-    async createOrganization(org: { approvers: string[]; defaultDepartmentId: string; }) {
+    async createOrganization(org: { approvers: string[]; }) {
         this.log.debug(`REQUEST: Create organization with: ${JSON.stringify(org)}`);
         return this.manager.ParticipantsManager
-            .createOrganization(org.approvers ? org.approvers : [], DecodeHex(org.defaultDepartmentId))
+            .createOrganization(org.approvers ? org.approvers : [])
             .then(data => {
-                if (data[0] === 1002) throw new Error('Organization id must be unique');
                 if (data[0] !== 1) throw new Error(`Error code creating new organization: ${data[0]}`);
                 this.log.info(`SUCCESS: Created new organization at address ${data[1]}, with approvers ${org.approvers}`);
                 return data[1];

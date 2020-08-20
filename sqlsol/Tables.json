@@ -1008,11 +1008,6 @@
           "Field": "approverCount",
           "ColumnName": "approver_count",
           "Type": "uint"
-        },
-        {
-          "Field": "organizationId",
-          "ColumnName": "organization_id",
-          "Type": "bytes32"
         }
       ]
     },

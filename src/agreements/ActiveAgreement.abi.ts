@@ -75,6 +75,12 @@ export module ActiveAgreement {
                 return Decode(this.client, exec).DATA_FIELD_AGREEMENT_PARTIES();
             });
         }
+        EMPTY_SCOPE() {
+            const data = Encode(this.client).EMPTY_SCOPE();
+            return Call<Tx, [Buffer]>(this.client, this.address, data, true, (exec: Uint8Array) => {
+                return Decode(this.client, exec).EMPTY_SCOPE();
+            });
+        }
         ERC165_ID_Address_Scopes() {
             const data = Encode(this.client).ERC165_ID_Address_Scopes();
             return Call<Tx, [Buffer]>(this.client, this.address, data, true, (exec: Uint8Array) => {
@@ -734,6 +740,7 @@ export module ActiveAgreement {
     export const Encode = <Tx>(client: Provider<Tx>) => { return {
         DATA_FIELD_AGREEMENT_EFFECTIVE_DATE: () => { return client.encode("1314CF66", []); },
         DATA_FIELD_AGREEMENT_PARTIES: () => { return client.encode("80C86BA7", []); },
+        EMPTY_SCOPE: () => { return client.encode("F6EC229E", []); },
         ERC165_ID_Address_Scopes: () => { return client.encode("BD9E0660", []); },
         ERC165_ID_VERSIONED_ARTIFACT: () => { return client.encode("E10533C6", []); },
         EVENT_CREATED: () => { return client.encode("F0897DB7", []); },
@@ -859,6 +866,7 @@ export module ActiveAgreement {
     export const Decode = <Tx>(client: Provider<Tx>, data: Uint8Array) => { return {
         DATA_FIELD_AGREEMENT_EFFECTIVE_DATE: (): [Buffer] => { return client.decode(data, ["bytes32"]); },
         DATA_FIELD_AGREEMENT_PARTIES: (): [Buffer] => { return client.decode(data, ["bytes32"]); },
+        EMPTY_SCOPE: (): [Buffer] => { return client.decode(data, ["bytes32"]); },
         ERC165_ID_Address_Scopes: (): [Buffer] => { return client.decode(data, ["bytes4"]); },
         ERC165_ID_VERSIONED_ARTIFACT: (): [Buffer] => { return client.decode(data, ["bytes4"]); },
         EVENT_CREATED: (): [Buffer] => { return client.decode(data, ["bytes32"]); },

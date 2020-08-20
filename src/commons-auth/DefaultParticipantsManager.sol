@@ -45,11 +45,10 @@ contract DefaultParticipantsManager is AbstractVersionedArtifact(1,0,0), Abstrac
      * REVERTS if:
      * - The Organization was created, but cannot be added to the this ParticipantsManager.
 	 * @param _initialApprovers the initial owners/admins of the Organization. If left empty, the msg.sender will be set as an approver.
-	 * @param _defaultDepartmentId an optional custom ID for the default department of this organization.
 	 * @return BaseErrors.NO_ERROR() if successful
 	 * @return the address of the newly created Organization, or 0x0 if not successful
 	 */
-    function createOrganization(address[] calldata _initialApprovers, bytes32 _defaultDepartmentId) external returns (uint error, address organization) {
+    function createOrganization(address[] calldata _initialApprovers) external returns (uint error, address organization) {
         address[] memory approvers;
         if (_initialApprovers.length == 0) {
             approvers = new address[](1);
@@ -60,7 +59,7 @@ contract DefaultParticipantsManager is AbstractVersionedArtifact(1,0,0), Abstrac
         }
 
         organization = address(new ObjectProxy(address(artifactsFinder), OBJECT_CLASS_ORGANIZATION));
-        Organization(address(organization)).initialize(approvers, _defaultDepartmentId);
+        Organization(address(organization)).initialize(approvers);
         error = ParticipantsManagerDb(database).addOrganization(organization);
         ErrorsLib.revertIf(error != BaseErrors.NO_ERROR(),
             ErrorsLib.INVALID_STATE(), "DefaultParticipantsManager.createOrganization", "Unable to add the new Organization to the database");
@@ -106,7 +105,7 @@ contract DefaultParticipantsManager is AbstractVersionedArtifact(1,0,0), Abstrac
 	 * @param _organization the address of an organization
 	 * @return the organization's ID and name
 	 */
-    function getOrganizationData(address _organization) external view returns (uint numApprovers, bytes32 organizationKey) {
+    function getOrganizationData(address _organization) external view returns (uint numApprovers) {
         return Organization(_organization).getOrganizationDetails();
     }
 

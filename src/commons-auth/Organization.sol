@@ -16,8 +16,7 @@ contract Organization is VersionedArtifact {
     event LogOrganizationCreation(
         bytes32 indexed eventId,
         address organizationAddress,
-        uint approverCount,
-        bytes32 organizationId
+        uint approverCount
     );
 
     event LogOrganizationUserUpdate(
@@ -90,9 +89,8 @@ contract Organization is VersionedArtifact {
 	 * @dev Initializes this DefaultOrganization with the provided list of initial approvers. This function replaces the
 	 * contract constructor, so it can be used as the delegate target for an ObjectProxy.
 	 * @param _initialApprovers an array of addresses that should be registered as approvers for this Organization
-	 * @param _defaultDepartmentId an optional ID for the default department of this organization
 	 */
-	function initialize(address[] calldata _initialApprovers, bytes32 _defaultDepartmentId) external;
+	function initialize(address[] calldata _initialApprovers) external;
 
 	/**
 	 * @dev Adds the department with the specified ID to this Organization.
@@ -108,12 +106,6 @@ contract Organization is VersionedArtifact {
 	function getDepartmentData(bytes32 _id) external view returns (uint userCount);
 	
 	function departmentExists(bytes32 _id) external view returns (bool);
-
-	/**
-	 * @dev Returns the ID of this Organization's default department
-	 * @return the ID of the default department
-	 */
-	function getDefaultDepartmentId() external view returns (bytes32);
 
 	/**
 	 * @dev Returns the number of registered approvers.
@@ -207,8 +199,10 @@ contract Organization is VersionedArtifact {
 
 	/**
 	 * @dev Returns whether the given user account is active in this organization and is authorized.
-	 * The optional department/role identifier can be used to provide an additional authorization scope
+	 * The department/role identifier can be used to provide an additional authorization scope
 	 * against which to authorize the user.
+   * IMPORTANT NOTE: (Also a TODO to remove)- an empty bytes32 value is not recognized properly,
+   * so pass in "EMPTY_SCOPE" marker instead of ""
 	 * @param _userAccount the user account
 	 * @param _department an optional department/role context
 	 * @return true if authorized, false otherwise
@@ -216,15 +210,8 @@ contract Organization is VersionedArtifact {
 	function authorizeUser(address _userAccount, bytes32 _department) external view returns (bool);
 
 	/**
-	 * @dev Returns the organization key of this Organization.
-	 * @return a globaly unique identifier for the Organization
-	 */
-	function getOrganizationKey() public view returns (bytes32);
-
-	/**
 	 * @dev Returns detailed information about this Organization
 	 * @return numberOfApprovers - the number of approvers in the organization
-	 * @return organizationKey - a globaly unique identifier for the organization
 	 */
-	function getOrganizationDetails() external view returns (uint numberOfApprovers, bytes32 organizationKey);
+	function getOrganizationDetails() external view returns (uint numberOfApprovers);
 }

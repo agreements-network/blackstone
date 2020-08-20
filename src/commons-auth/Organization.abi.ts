@@ -161,12 +161,6 @@ export module Organization {
                 return Decode(this.client, exec).getArtifactVersionPatch();
             });
         }
-        getDefaultDepartmentId() {
-            const data = Encode(this.client).getDefaultDepartmentId();
-            return Call<Tx, [Buffer]>(this.client, this.address, data, true, (exec: Uint8Array) => {
-                return Decode(this.client, exec).getDefaultDepartmentId();
-            });
-        }
         getDepartmentAtIndex(_index: number) {
             const data = Encode(this.client).getDepartmentAtIndex(_index);
             return Call<Tx, {
@@ -223,15 +217,8 @@ export module Organization {
             const data = Encode(this.client).getOrganizationDetails();
             return Call<Tx, {
                 numberOfApprovers: number;
-                organizationKey: Buffer;
             }>(this.client, this.address, data, true, (exec: Uint8Array) => {
                 return Decode(this.client, exec).getOrganizationDetails();
-            });
-        }
-        getOrganizationKey() {
-            const data = Encode(this.client).getOrganizationKey();
-            return Call<Tx, [Buffer]>(this.client, this.address, data, true, (exec: Uint8Array) => {
-                return Decode(this.client, exec).getOrganizationKey();
             });
         }
         getUserAtIndex(_pos: number) {
@@ -240,8 +227,8 @@ export module Organization {
                 return Decode(this.client, exec).getUserAtIndex();
             });
         }
-        initialize(_initialApprovers: string[], _defaultDepartmentId: Buffer) {
-            const data = Encode(this.client).initialize(_initialApprovers, _defaultDepartmentId);
+        initialize(_initialApprovers: string[]) {
+            const data = Encode(this.client).initialize(_initialApprovers);
             return Call<Tx, void>(this.client, this.address, data, false, (exec: Uint8Array) => {
                 return Decode(this.client, exec).initialize();
             });
@@ -300,7 +287,6 @@ export module Organization {
         getArtifactVersionMajor: () => { return client.encode("57E0EBCA", []); },
         getArtifactVersionMinor: () => { return client.encode("7589ADB7", []); },
         getArtifactVersionPatch: () => { return client.encode("F085F6DD", []); },
-        getDefaultDepartmentId: () => { return client.encode("6FA02737", []); },
         getDepartmentAtIndex: (_index: number) => { return client.encode("AAA8282B", ["uint256"], _index); },
         getDepartmentData: (_id: Buffer) => { return client.encode("F06E141E", ["bytes32"], _id); },
         getDepartmentUserAtIndex: (_depId: Buffer, _index: number) => { return client.encode("81B05199", ["bytes32", "uint256"], _depId, _index); },
@@ -309,9 +295,8 @@ export module Organization {
         getNumberOfDepartments: () => { return client.encode("E94E9888", []); },
         getNumberOfUsers: () => { return client.encode("4D009288", []); },
         getOrganizationDetails: () => { return client.encode("89C9E2EF", []); },
-        getOrganizationKey: () => { return client.encode("ABD67A7E", []); },
         getUserAtIndex: (_pos: number) => { return client.encode("FFCC7BBF", ["uint256"], _pos); },
-        initialize: (_initialApprovers: string[], _defaultDepartmentId: Buffer) => { return client.encode("D44A9341", ["address[]", "bytes32"], _initialApprovers, _defaultDepartmentId); },
+        initialize: (_initialApprovers: string[]) => { return client.encode("A224CEE7", ["address[]"], _initialApprovers); },
         removeApprover: (_userAccount: string) => { return client.encode("6CF4C88F", ["address"], _userAccount); },
         removeDepartment: (_depId: Buffer) => { return client.encode("FBE620A7", ["bytes32"], _depId); },
         removeUser: (_userAccount: string) => { return client.encode("98575188", ["address"], _userAccount); },
@@ -352,7 +337,6 @@ export module Organization {
         getArtifactVersionMajor: (): [number] => { return client.decode(data, ["uint8"]); },
         getArtifactVersionMinor: (): [number] => { return client.decode(data, ["uint8"]); },
         getArtifactVersionPatch: (): [number] => { return client.decode(data, ["uint8"]); },
-        getDefaultDepartmentId: (): [Buffer] => { return client.decode(data, ["bytes32"]); },
         getDepartmentAtIndex: (): {
             id: Buffer;
         } => {
@@ -387,12 +371,10 @@ export module Organization {
         getNumberOfUsers: (): [number] => { return client.decode(data, ["uint256"]); },
         getOrganizationDetails: (): {
             numberOfApprovers: number;
-            organizationKey: Buffer;
         } => {
-            const [numberOfApprovers, organizationKey] = client.decode(data, ["uint256", "bytes32"]);
-            return { numberOfApprovers: numberOfApprovers, organizationKey: organizationKey };
+            const [numberOfApprovers] = client.decode(data, ["uint256"]);
+            return { numberOfApprovers: numberOfApprovers };
         },
-        getOrganizationKey: (): [Buffer] => { return client.decode(data, ["bytes32"]); },
         getUserAtIndex: (): [string] => { return client.decode(data, ["address"]); },
         initialize: (): void => { return; },
         removeApprover: (): void => { return; },

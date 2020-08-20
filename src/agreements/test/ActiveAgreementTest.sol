@@ -221,10 +221,10 @@ contract ActiveAgreementTest {
 
 		// set up the parties.
 		// Signer1 is a direct signer
-		// Signer 2 is signing on behalf of an organization (default department)
+		// Signer 2 is signing on behalf of an organization
 		Organization org1 = new DefaultOrganization();
-		org1.initialize(emptyAddressArray, EMPTY);
-		if (!org1.addUserToDepartment(address(signer2), EMPTY)) return "Unable to add user account to organization";
+		org1.initialize(emptyAddressArray);
+		if (!org1.addUser(address(signer2))) return "Unable to add user account to organization";
 		delete parties;
 		parties.push(address(signer1));
 		parties.push(address(org1));
@@ -310,10 +310,10 @@ contract ActiveAgreementTest {
 
 		// set up the parties.
 		// Signer1 and signer3 are direct signers
-		// Signer 2 is signing on behalf of an organization (default department)
+		// Signer 2 is signing on behalf of an organization
 		Organization org1 = new DefaultOrganization();
-		org1.initialize(emptyAddressArray, EMPTY);
-		if (!org1.addUserToDepartment(address(signer2), EMPTY)) return "Unable to add user account to organization";
+		org1.initialize(emptyAddressArray);
+		if (!org1.addUser(address(signer2))) return "Unable to add user account to organization";
 		delete parties;
 		parties.push(address(signer1));
 		parties.push(address(org1));
@@ -458,9 +458,8 @@ contract ActiveAgreementTest {
 		signer2 = new DefaultUserAccount();
 		signer2.initialize(address(this), address(0));
 		Organization org1 = new DefaultOrganization();
-		org1.initialize(emptyAddressArray, EMPTY);
-		if (!org1.addUserToDepartment(address(signer1), EMPTY)) return "Unable to add user account to organization";
-
+		org1.initialize(emptyAddressArray);
+		if (!org1.addUser(address(signer1))) return "Unable to add user account to organization";
 		// set up signatory parties
 		delete parties;
 		parties.push(address(signer1));

@@ -32,7 +32,8 @@ contract ParticipantsManagerTest {
     ParticipantsManager participantsManager;
     Ecosystem myEcosystem;
 
-    bytes32 EMPTY = "";
+ // TODO: Remove marker for empty scope after (address,bytes32) signature handling fixed
+    bytes32 EMPTY_SCOPE = "EMPTY_SCOPE";
 
     bytes32 acc1Id;
     bytes32 acc2Id;
@@ -100,9 +101,9 @@ contract ParticipantsManagerTest {
         // create the required organizations
         address[] memory approvers;
         DefaultOrganization org1 = new DefaultOrganization();
-        org1.initialize(approvers, EMPTY);
+        org1.initialize(approvers);
         DefaultOrganization org2 = new DefaultOrganization();
-        org2.initialize(approvers, EMPTY);
+        org2.initialize(approvers);
 
         uint oldSize = participantsManager.getUserAccountsSize();
 
@@ -131,7 +132,6 @@ contract ParticipantsManagerTest {
         addr = myEcosystem.getUserAccount(acc3Id);
         if (addr == address(0)) return "Exp. non-0x0 address";
         if (addr != account3) return "account3 address mismatch";
-        // if (UserAccount(addr).getId() != keccak256(abi.encodePacked(acc3Id))) return "UserAccount addr id mismatch";
         if (UserAccount(addr).getOwner() != address(this)) return "Exp. this";
         if (participantsManager.getUserAccountsSize() != oldSize + 1) return "Expected accounts size to be +1";
 
@@ -139,21 +139,21 @@ contract ParticipantsManagerTest {
         oldSize = org1.getNumberOfUsers();
         if (!org1.addUser(account2)) return "Adding account2 to org1 failed";
         if (oldSize+1 != org1.getNumberOfUsers()) return "Expected number of user in org1 to have increased after account2 added.";
-        if (org1.getUserAtIndex(0) != address(account2)) return "Expected second user of org1 to be account2";
-        if (!org1.authorizeUser(account2, keccak256(abi.encodePacked(address(org1))))) return "account2 expected to be active in org1";
+        if (org1.getUserAtIndex(0) != address(account2)) return "Expected first user of org1 to be account2";
+        if (!org1.authorizeUser(account2, EMPTY_SCOPE)) return "account2 expected to be active in org1";
         if (!org1.removeUser(account2)) return "Removing account2 from org1 failed.";
-        if (org1.authorizeUser(account2, keccak256(abi.encodePacked(address(org1))))) return "account2 expected to be inactive in org1";
+        if (org1.authorizeUser(account2, EMPTY_SCOPE)) return "account2 expected to be inactive in org1";
         if (!org1.addUser(account2)) return "Failed adding account2 back into org1";
-        if (!org1.authorizeUser(account2, keccak256(abi.encodePacked(address(org1))))) return "account2 expected to be active again in org1";
+        if (!org1.authorizeUser(account2, EMPTY_SCOPE)) return "account2 expected to be active again in org1";
 
         // user can be added to multiple organizations
         oldSize = org2.getNumberOfUsers();
         if (!org2.addUser(account2)) return "Adding account2 to org2 failed";
         if (oldSize+1 != org2.getNumberOfUsers()) return "Expected number of user in org2 to have increased after account2 added.";
-        if (org2.getUserAtIndex(0) != address(account2)) return "Expected second user of org2 to be account2";
-        if (!org2.authorizeUser(account2, keccak256(abi.encodePacked(address(org2))))) return "account2 expected to be active in org2";
+        if (org2.getUserAtIndex(0) != address(account2)) return "Expected first user of org2 to be account2";
+        if (!org2.authorizeUser(account2, EMPTY_SCOPE)) return "account2 expected to be active in org2";
         if (!org2.removeUser(account2)) return "Removing account2 from org2 failed.";
-        if (org2.authorizeUser(account2, keccak256(abi.encodePacked(address(org2))))) return "account2 expected to be inactive in org2";
+        if (org2.authorizeUser(account2, EMPTY_SCOPE)) return "account2 expected to be inactive in org2";
 
         // users can be added to departments in organization
         if (!org1.addDepartment(dep1Id)) return "Adding dep1 to org1 should be successful";
@@ -197,19 +197,13 @@ contract ParticipantsManagerTest {
 		
 		// 1. Create organization with empty admins
         
-        (error, addr) = participantsManager.createOrganization(emptyAdmins, "Unassigned");
+        (error, addr) = participantsManager.createOrganization(emptyAdmins);
         Organization org1 = Organization(addr);
 
         UserAccount user1 = new DefaultUserAccount();
         user1.initialize(address(participantsManager), address(0));
         UserAccount user2 = new DefaultUserAccount();
         user2.initialize(address(participantsManager), address(0));
-		
-        // Test special handling of the default department in the organization
-        if (!org1.departmentExists(org1.getDefaultDepartmentId()))
-            return "The default department should have been created when creating the organization";
-        if (org1.removeDepartment(org1.getDefaultDepartmentId()))
-            return "It should not be possible to remove the default department";
 
 		if (participantsManager.getNumberOfOrganizations() != 1) return "Number of Orgs in participantsManager should be 1";
 		if (org1.getNumberOfApprovers() != 1) return "Number of approvers in org1 not correct";
@@ -218,15 +212,14 @@ contract ParticipantsManagerTest {
 
         // departments
         if (!org1.addDepartment(dep1Id)) return "Adding department1 to org1 should be successful";
-        // reminder: number of deps is +1 due to the default department
-        if (org1.getNumberOfDepartments() != 2) return "Failed to get number of departments in org1";
-        if (org1.getDepartmentAtIndex(1) != dep1Id) return "Failed to get department id at pos 0 in org1";
+        if (org1.getNumberOfDepartments() != 1) return "Failed to get number of departments in org1";
+        if (org1.getDepartmentAtIndex(0) != dep1Id) return "Failed to get department id at pos 0 in org1";
         if (!org1.departmentExists(dep1Id)) return "Failed to find existance of dep1 in org1";
         uint retUserCount = org1.getDepartmentData(dep1Id);
         if (retUserCount != 0) return "Failed to get department data (user count) for dep1 in org1";
 		address orgAddr = participantsManager.getOrganizationAtIndex(0);
 		if (orgAddr != address(org1)) return "Expected org1 address";
-        (retUserCount, ) = participantsManager.getOrganizationData(orgAddr);
+    retUserCount = participantsManager.getOrganizationData(orgAddr);
 		if (retUserCount != 1) return "Expected number of approvers for orgAddr to be 1";
 
         // department users
@@ -252,7 +245,7 @@ contract ParticipantsManagerTest {
 		knownAdmins[1] = address(org1);
 
         address orgAddress2;
-        (error, orgAddress2) = participantsManager.createOrganization(knownAdmins, EMPTY);
+        (error, orgAddress2) = participantsManager.createOrganization(knownAdmins);
         if (BaseErrors.NO_ERROR() != error) return "Unexpected error creating organization 2 (known admins)";
 		if (Organization(orgAddress2).getNumberOfApprovers() != 2) return "Number of approvers in organization 2 not correct";
 		if (Organization(orgAddress2).getApproverAtIndex(0) != tx.origin) return "Approver 1 in organization 2 should be tx.origin";
@@ -260,7 +253,7 @@ contract ParticipantsManagerTest {
 		if (participantsManager.organizationExists(orgAddress2) != true) return "Organization 2 should exist in the ParticipantsManager";
 		// create with emptyAdmins again, so that msg.sender is automatically used for approver
 		address orgAddress3;
-        (error, orgAddress3) = participantsManager.createOrganization(emptyAdmins, EMPTY);
+        (error, orgAddress3) = participantsManager.createOrganization(emptyAdmins);
         if (BaseErrors.NO_ERROR() != error) return "Unexpected error creating organization 3 (empty admins)";
 		if (Organization(orgAddress3).getNumberOfApprovers() != 1) return "Number of approvers in organization 3 not correct";
 		if (Organization(orgAddress3).getApproverAtIndex(0) != address(this)) return "Approver in organization 3 should be the test contract as the creator.";
@@ -270,7 +263,7 @@ contract ParticipantsManagerTest {
 
 		orgAddr = participantsManager.getOrganizationAtIndex(2);
 		if (orgAddr != orgAddress3) return "Expected orgAddress3";
-        (retUserCount, ) = participantsManager.getOrganizationData(orgAddress3);
+    retUserCount = participantsManager.getOrganizationData(orgAddress3);
 		if (retUserCount != 1) return "Expected number of approvers for orgAddress3 to be 1";
 
 		return SUCCESS;
@@ -284,7 +277,7 @@ contract ParticipantsManagerTest {
 		address[] memory emptyAdmins;
 
         Organization org = new DefaultOrganization();
-        org.initialize(emptyAdmins, EMPTY);
+        org.initialize(emptyAdmins);
         bytes32 dep1Id = "department";
 
         UserAccount user1 = new DefaultUserAccount();
@@ -294,25 +287,23 @@ contract ParticipantsManagerTest {
         UserAccount user3 = new DefaultUserAccount();
         user3.initialize(address(participantsManager), address(0));
 
-        // User1 -> default department
+        // User1 -> Not in org
         // User2 -> Department 1
         // User3 -> Organization only 
         if (!org.addDepartment(dep1Id)) return "Adding department1 to org1 should be successful";
-        if (!org.addUserToDepartment(address(user1), EMPTY)) return "Failed to add user1 to default department";
         if (!org.addUserToDepartment(address(user2), dep1Id)) return "Failed to add user2 to department1";
         if (!org.addUser(address(user3))) return "Failed to add user3 to organization";
 
         if (org.getNumberOfDepartmentUsers(dep1Id) != 1) return "There should be 1 user in department 1";
         // auth failure
         if (org.authorizeUser(address(user1), dep1Id)) return "User1 should not be authorized for department1";
-        if (org.authorizeUser(address(user3), EMPTY)) return "User3 should not be authorized for empty department (default)";
-        if (org.authorizeUser(address(this), keccak256(abi.encodePacked(address(org))))) return "Test address should not be authorized for the organization";
+        if (org.authorizeUser(address(user3), dep1Id)) return "User3 should not be authorized for department1";
+        if (org.authorizeUser(address(user1), EMPTY_SCOPE)) return "User1 should not be authorized for the organization";
+        if (org.authorizeUser(address(user2), "fakeDepartment")) return "User2 should not be authorized for a non-existent department";
         // auth success
-        if (!org.authorizeUser(address(user1), EMPTY)) return "User1 should be authorized for empty department (default)";
-        if (!org.authorizeUser(address(user1), "fakeDepartmentXYZ")) return "User1 should be authorized for non-existent department (default)";
         if (!org.authorizeUser(address(user2), dep1Id)) return "User2 should be authorized for department1";
-        if (!org.authorizeUser(address(user3), keccak256(abi.encodePacked(address(org))))) return "User3 should be authorized for the organization";
-        if (!org.authorizeUser(address(user1), keccak256(abi.encodePacked(address(org))))) return "User1 should be authorized for the organization";
+        if (!org.authorizeUser(address(user3), EMPTY_SCOPE)) return "User3 should be authorized for the organization";
+        if (!org.authorizeUser(address(user2), EMPTY_SCOPE)) return "User2 should be authorized for the organization";
 
         return SUCCESS;
     }
@@ -337,7 +328,7 @@ contract ParticipantsManagerTest {
         Organization org = new DefaultOrganization();
         address[] memory admins = new address[](1);
 		admins[0] = address(user1);
-        org.initialize(admins, EMPTY);
+        org.initialize(admins);
 
         // Test for successful add
         payload = abi.encodeWithSignature(functionSigAddApprover, address(user2));

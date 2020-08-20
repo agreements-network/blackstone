@@ -175,7 +175,7 @@ contract PermissionedTest {
 		bytes32 context = "context";
 		address[] memory emptyAddressArray;
 		Organization org1 = new DefaultOrganization();
-		org1.initialize(emptyAddressArray, empty);
+		org1.initialize(emptyAddressArray);
 		org1.addUser(address(this));
 
 		// Should allow ORGANIZATION MEMBER with the SINGLE-holder permission to call guarded function of a NON-SCOPED object
@@ -208,11 +208,12 @@ contract PermissionedTest {
 		object4 = new ScopedPermissionedObject(address(0));
 		object4.createPermission(permission1, false, true, false);
 		object4.grantPermission(permission1, address(org1));
-		object4.setAddressScope(address(org1), context, org1.getOrganizationKey(), empty, empty, address(0));
-		(success, ) = address(object4).call(abi.encodeWithSignature(functionSigPermissionedFunction));
-		if (!success) return "permissionedFunction should work in call() by member of the permission-holder organization and department defined by scope";
 		org1.addDepartment(context);
 		object4.setAddressScope(address(org1), context, context, empty, empty, address(0));
+		org1.addUserToDepartment(address(this), context);
+		(success, ) = address(object4).call(abi.encodeWithSignature(functionSigPermissionedFunction));
+		if (!success) return "permissionedFunction should work in call() by member of the permission-holder organization and department defined by scope";
+		org1.removeUserFromDepartment(address(this), context);
 		(success, ) = address(object4).call(abi.encodeWithSignature(functionSigPermissionedFunction));
 		if (success) return "Calling guarded permissionedFunction should revert if msg.sender is not in the permission-holder organization and department defined by scope";
 
@@ -221,11 +222,12 @@ contract PermissionedTest {
 		object4.createPermission(permission1, true, true, false);
 		object4.grantPermission(permission1, address(object5));
 		object4.grantPermission(permission1, address(org1));
-		object4.setAddressScope(address(org1), context, org1.getOrganizationKey(), empty, empty, address(0));
+    object4.setAddressScope(address(org1), context, context, empty, empty, address(0));
+    org1.addUserToDepartment(address(this), context);
 		(success, ) = address(object4).call(abi.encodeWithSignature(functionSigPermissionedFunction));
 		if (!success) return "permissionedFunction should work in call() by member of a permission-holder organization and department defined by scope";
-		// Change department defined in scope to cause revert
-		object4.setAddressScope(address(org1), context, context, empty, empty, address(0));
+		// Remove user from department used defined as scope to cause revert
+		org1.removeUserFromDepartment(address(this), context);
 		(success, ) = address(object4).call(abi.encodeWithSignature(functionSigPermissionedFunction));
 		if (success) return "Calling guarded permissionedFunction should revert if msg.sender is not in a permission-holder organization and department defined by scope";
 

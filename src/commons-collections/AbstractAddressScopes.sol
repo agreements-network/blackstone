@@ -107,8 +107,10 @@ contract AbstractAddressScopes is AddressScopes {
 					ErrorsLib.INVALID_INPUT(), "AbstractAddressScopes.getScope", "The DataStorage parameter is required for a ConditionalData scope without a fixed dataStorage address");
 			}
             (address targetDataStorage, bytes32 dataPath) = addressScopes[key].scope.conditionalScope.resolveDataLocation(_dataStorage);
+            if (DataStorage(targetDataStorage).getDataValueAsBytes32(dataPath) == "") return EMPTY_SCOPE;
 			return DataStorage(targetDataStorage).getDataValueAsBytes32(dataPath);
         }
+        return EMPTY_SCOPE;
 	}
 
 	/**
