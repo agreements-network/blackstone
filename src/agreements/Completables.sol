@@ -74,6 +74,12 @@ contract Completables is CompletableOptions, AbstractVersionedArtifact(1,0,0), A
         int timestamp
     );
 
+    event LogAgreementCompletableMetaUpdate(
+        bytes32 indexed eventId,
+        bytes32 indexed intervalId,
+        string metadata
+    );
+
     struct Franchisee {
         address franchiseeAddress;
         bool ratified;
@@ -324,6 +330,16 @@ contract Completables is CompletableOptions, AbstractVersionedArtifact(1,0,0), A
             revert(Strings.concat("Neither actor ", actor.toHex(), " or party ", party.toHex(), "is not a franchisee of interval ", intervalId.toHex()));
         }
         return ratifications;
+    }
+
+    function updateMeta(bytes32 intervalId, string calldata metadata)
+        external
+        completableExists(intervalId)
+        onlyController(intervalId) {
+        emit LogAgreementCompletableMetaUpdate(EVENT_ID_AGREEMENT_COMPLETABLE,
+            intervalId,
+            metadata
+        );
     }
 
     // Migrations - we need to implement these functions if DOUG is to attempt to upgrade this way at any time in the future
