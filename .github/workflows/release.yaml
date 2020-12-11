@@ -12,9 +12,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: git fetch --prune --unshallow
-    - uses: actions/setup-node@v1
+    - uses: actions/setup-node@v2-beta
       with:
-        node-version: '13.x'
+        node-version: '14.x'
         registry-url: 'https://registry.npmjs.org'
     - name: publish
       env:
@@ -23,5 +23,10 @@ jobs:
         git config --global user.email "${GITHUB_ACTOR}"
         git config --global user.name "${GITHUB_ACTOR}"
         yarn install
+        yarn config set '//registry.npmjs.org/:_authToken' "${{ secrets.NPM_TOKEN }}"
+        yarn config set always-auth true
+        yarn config set registry 'https://registry.npmjs.org/'
+        yarn config list
+        make dist
         yarn version --no-git-tag-version --new-version $(git describe --tags)
-        make publish
+        yarn publish --non-interactive --access public .

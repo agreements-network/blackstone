@@ -8,6 +8,8 @@
 # |_______/ |__/ \_______/ \_______/|__/  \__/|_______/    \___/   \______/ |__/  |__/ \_______/
 #
 
+# POINTLESS CHANGE
+
 CI_IMAGE="quay.io/monax/blackstone:ci"
 
 # Convert each assigment to if-not-set '?=' assignment to match behaviour of dotenv module within files
