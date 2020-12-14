@@ -27,8 +27,6 @@
     "dotenv": "^8.2.0",
     "ethereumjs-abi": "^0.6.8",
     "global": "^4.4.0",
-    "google-protobuf": "^3.11.2",
-    "grpc": "^1.24.2",
     "log4js": "^6.1.1",
     "pg": "^8.1.0",
     "pg-listen": "^1.5.1",

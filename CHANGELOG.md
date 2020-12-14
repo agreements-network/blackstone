@@ -2,6 +2,7 @@
 
 ## Release History
 
+- Version [5.1.0](#v5.1.0)
 - Version [5.0.0](#v5.0.0)
 - Version [4.0.0](#v4.0.0)
 - Version [3.0.0](#v3.0.0)
@@ -21,6 +22,11 @@
 - Version [0.6.0](#v0.6.0)
 - Version [0.5.2](#v0.5.2)
 - Version [0.5.1](#v0.5.1)
+
+## <a name="v5.1.0">Release 5.1.0</a>
+### Changed
+- Remove unneeded native GRPC deps
+
 
 ## <a name="v5.0.0">Release 5.0.0</a>
 
