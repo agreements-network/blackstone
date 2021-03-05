@@ -133,6 +133,10 @@ jobs:
     contract: AgreementDatesTest.bin
     libraries: AgreementsAPI:$AgreementsAPI, Strings:$Strings, ErrorsLib:$ErrorsLib
 
+- name: AgreementRequestResponseTest
+  deploy:
+    contract: AgreementRequestResponseTest.bin
+
 - name: testActiveAgreementSetup
   call:
     destination: $ActiveAgreementTest
@@ -214,6 +218,18 @@ jobs:
 - name: assertDateCycles
   assert:
     key: $testDateCycles
+    relation: eq
+    val: success
+
+- name: testAgreementRequestResponse
+  call:
+    destination: $AgreementRequestResponseTest
+    bin: AgreementRequestResponseTest
+    function: testAgreementRequestResponse
+
+- name: assertAgreementRequestResponse
+  assert:
+    key: $testAgreementRequestResponse
     relation: eq
     val: success
 

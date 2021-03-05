@@ -12,6 +12,7 @@ import { GetFromNameRegistry } from "./utils";
 import { Contracts } from "./constants";
 import { Completables } from "../agreements/Completables.abi";
 import { AgreementDates } from "../agreements/AgreementDates.abi";
+import { AgreementRequestResponse } from "../agreements/AgreementRequestResponse.abi";
 
 async function lookup(doug: DOUG.Contract<CallTx>, contract: string) {
   const result = await doug.lookup(contract);
@@ -28,6 +29,7 @@ export type Manager = {
   BpmService: BpmService.Contract<CallTx>;
   Completables: Completables.Contract<CallTx>;
   AgreementDates: AgreementDates.Contract<CallTx>;
+  AgreementRequestResponse: AgreementRequestResponse.Contract<CallTx>;
 };
 
 export async function NewManager(client: Client): Promise<Manager> {
@@ -46,6 +48,10 @@ export async function NewManager(client: Client): Promise<Manager> {
   const bpmService = lookup(doug, Contracts.BpmService);
   const completables = lookup(doug, Contracts.Completables);
   const agreementDates = lookup(doug, Contracts.AgreementDates);
+  const agreementRequestResponse = lookup(
+    doug,
+    Contracts.AgreementRequestResponse
+  );
 
   return {
     EcosystemRegistry: new EcosystemRegistry.Contract(
@@ -75,5 +81,9 @@ export async function NewManager(client: Client): Promise<Manager> {
     BpmService: new BpmService.Contract(client, await bpmService),
     Completables: new Completables.Contract(client, await completables),
     AgreementDates: new AgreementDates.Contract(client, await agreementDates),
+    AgreementRequestResponse: new AgreementRequestResponse.Contract(
+      client,
+      await agreementRequestResponse
+    ),
   };
 }

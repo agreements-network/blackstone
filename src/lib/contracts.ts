@@ -561,6 +561,44 @@ export class Contracts {
     );
   }
 
+  async requestCreateAgreement(
+    tokenId: number,
+    tokenContractAddress: string,
+    templateId: string,
+    templateConfig: number,
+    seller: string,
+    buyer: string,
+    stateChangeReport: boolean
+  ): Promise<void> {
+    return this.manager.AgreementRequestResponse.requestCreateAgreement(
+      tokenId,
+      tokenContractAddress,
+      BytesFromString(templateId),
+      templateConfig,
+      seller,
+      buyer,
+      stateChangeReport
+    );
+  }
+
+  async reportAgreementCreation(
+    tokenId: number,
+    tokenContractAddress: string,
+    errorCode: string,
+    agreement: string,
+    permalink: string,
+    requestIndex: number
+  ): Promise<void> {
+    return this.manager.AgreementRequestResponse.reportAgreementCreation(
+      tokenId,
+      tokenContractAddress,
+      errorCode,
+      agreement,
+      permalink,
+      requestIndex
+    );
+  }
+
   async createArchetype(archetype: archetype) {
     const {
       price,

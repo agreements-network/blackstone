@@ -22,6 +22,7 @@ const contracts = [
   "agreements/RenewalInitializer.sol",
   "agreements/RenewalEvaluator.sol",
   "agreements/Completables.sol",
+  "agreements/AgreementRequestResponse.sol",
   "agreements/DateRelations.sol",
   "agreements/AgreementDates.sol",
 

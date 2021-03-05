@@ -55,6 +55,7 @@ import { DeployDeadline, DeployWait } from "./bpm-oracles/deploy";
 import { DeployNumbers } from "./commons-math/deploy";
 import { Completables } from "./agreements/Completables.abi";
 import { AgreementDates } from "./agreements/AgreementDates.abi";
+import { AgreementRequestResponse } from "./agreements/AgreementRequestResponse.abi";
 
 function assert(left: string, right: string) {
   if (left != right) throw new Error(`Expected to match: ${left} != ${right}`);
@@ -689,6 +690,24 @@ export async function DeployAgreementDates(
   await doug.deploy(Contracts.AgreementDates, agreementDates);
 }
 
+export async function DeployAgreementRequestResponse(
+  client: Client,
+  doug: DOUG.Contract<CallTx>
+) {
+  const agreementRequestResponse = await DeployLib(
+    client,
+    AgreementRequestResponse.Deploy
+  );
+  await new UpgradeOwned.Contract(
+    client,
+    agreementRequestResponse
+  ).transferUpgradeOwnership(doug.address);
+  await doug.deploy(
+    Contracts.AgreementRequestResponse,
+    agreementRequestResponse
+  );
+}
+
 export async function DeployRenewalInitializer(
   client: Client,
   doug: DOUG.Contract<CallTx>,
@@ -930,6 +949,7 @@ export async function Deploy(client: Client) {
     DeployNumbers(client, applicationRegistry),
     DeployCompletables(client, doug, agreementsAPI, errorsLib, stringsLib),
     DeployAgreementDates(client, doug, agreementsAPI, errorsLib, stringsLib),
+    DeployAgreementRequestResponse(client, doug),
   ]);
 
   await Promise.all([
