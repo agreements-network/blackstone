@@ -170,8 +170,10 @@ contract DefaultActiveAgreement is AbstractVersionedArtifact(1,8,0), AbstractAct
 		pre_requiresPermission(ROLE_ID_LEGAL_STATE_CONTROLLER)
 		external
 	{
+    if (_legalState != legalState) {
+  		emit LogAgreementLegalStateUpdate(EVENT_ID_AGREEMENTS, address(this), uint8(legalState), block.timestamp);
+    }
 		legalState = _legalState;
-		emit LogAgreementLegalStateUpdate(EVENT_ID_AGREEMENTS, address(this), uint8(legalState), block.timestamp);
 	}
 
 	/**
